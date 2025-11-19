@@ -178,8 +178,19 @@ class AuditAPI {
 
         // Verificar campos requeridos
         requiredFields.forEach(field => {
-            if (!data[field] && data[field] !== false) {
-                errors.push(`El campo ${field} es requerido`);
+            const value = data[field];
+            
+            // Manejar campos de checkbox (errors_found)
+            if (field === 'errors_found') {
+                // Los checkboxes siempre tienen un valor (true/false), no es undefined
+                if (value === undefined || value === null) {
+                    errors.push(`El campo ${field} es requerido`);
+                }
+            } else {
+                // Para otros campos, verificar que no estén vacíos
+                if (!value && value !== 0 && value !== false) {
+                    errors.push(`El campo ${field} es requerido`);
+                }
             }
         });
 
@@ -199,11 +210,14 @@ class AuditAPI {
         }
 
         // Validar GC con errores
-        if (data.gc_with_errors !== undefined) {
+        if (data.gc_with_errors !== undefined && data.gc_with_errors !== null && data.gc_with_errors !== '') {
             const gcErrors = parseInt(data.gc_with_errors);
             if (isNaN(gcErrors) || gcErrors < 0) {
-                errors.push('GC con errores debe ser un número positivo');
+                errors.push('GC con errores debe ser un número igual o mayor a 0');
             }
+        } else {
+            // Si no se especifica, asumir 0 errores
+            data.gc_with_errors = 0;
         }
 
         // Validar cantidad de GC en orden
@@ -217,6 +231,23 @@ class AuditAPI {
         // Validar longitud de notas
         if (data.notes && data.notes.length > this.config.VALIDATION.MAX_NOTES_LENGTH) {
             errors.push(`Las notas no pueden exceder ${this.config.VALIDATION.MAX_NOTES_LENGTH} caracteres`);
+        }
+
+        // Validar que si hay errores, se especifiquen al menos algunos tipos de error
+        if (data.errors_found) {
+            const errorFields = Object.keys(this.config.ERROR_TYPES);
+            let hasErrors = false;
+            
+            errorFields.forEach(field => {
+                const formField = `${field}_error`;
+                if (data[formField] && data[formField] > 0) {
+                    hasErrors = true;
+                }
+            });
+            
+            if (!hasErrors) {
+                errors.push('Si se encontraron errores, debe especificar al menos un tipo de error');
+            }
         }
 
         return {
@@ -269,8 +300,24 @@ class AuditAPI {
         data.order_number = formData.order_number;
         data.sh = formData.sh;
         data.qty_of_gc_in_order = formData.qty_of_gc_in_order ? parseInt(formData.qty_of_gc_in_order) : null;
-        data.errors_found = formData.errors_found === 'true' || formData.errors_found === true;
-        data.gc_with_errors = formData.gc_with_errors ? parseInt(formData.gc_with_errors) : null;
+        data.errors_found = formData.errors_found === true || 
+                          formData.errors_found === 'true' || 
+                          formData.errors_found === 'on' || 
+                          formData.errors_found === 1 || 
+                          formData.errors_found === '1';
+        
+        // Si errors_found es true, gc_with_errors debe ser al menos 1
+        if (data.errors_found && data.gc_with_errors === 0) {
+            data.gc_with_errors = 1; // Si hay errores, debe haber al menos 1 palo con error
+        }
+        
+        // Asegurar que gc_with_errors sea un número válido
+        if (data.errors_found && data.gc_with_errors < 1) {
+            data.gc_with_errors = 1;
+        }
+        data.gc_with_errors = formData.gc_with_errors !== undefined && formData.gc_with_errors !== '' 
+                            ? parseInt(formData.gc_with_errors) 
+                            : 0;
         data.notes = formData.notes;
 
         // Campos de error
