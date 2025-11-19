@@ -243,13 +243,50 @@ class AuditApp {
         });
     }
 
+    // Extraer datos del formulario de manera robusta
+    extractFormData(form) {
+        const data = {};
+        
+        // Campos de texto, número y select
+        const textFields = ['checked_by', 'audit_date', 'build_cell', 'operadores', 'order_number', 'sh', 'qty_of_gc_in_order', 'notes'];
+        textFields.forEach(fieldName => {
+            const element = form.querySelector(`[name="${fieldName}"]`);
+            if (element) {
+                data[fieldName] = element.value;
+            }
+        });
+        
+        // Checkbox - manejo especial
+        const checkbox = form.querySelector('[name="errors_found"]');
+        if (checkbox) {
+            data.errors_found = checkbox.checked;
+        }
+        
+        // Número - manejo especial para gc_with_errors
+        const gcWithErrors = form.querySelector('[name="gc_with_errors"]');
+        if (gcWithErrors) {
+            data.gc_with_errors = gcWithErrors.value;
+        }
+        
+        // Campos de error (selects)
+        const errorFields = Object.keys(window.CONFIG.ERROR_TYPES);
+        errorFields.forEach(field => {
+            const element = form.querySelector(`[name="${field}_error"]`);
+            if (element) {
+                data[`${field}_error`] = element.value;
+            }
+        });
+        
+        return data;
+    }
+
     // Manejar envío del formulario
     async handleFormSubmit(e) {
         e.preventDefault();
         
         try {
-            const formData = new FormData(e.target);
-            const data = Object.fromEntries(formData.entries());
+            const form = e.target;
+            const data = this.extractFormData(form);
             
             // Validar datos
             const validation = window.auditAPI.validateAuditData(data);
