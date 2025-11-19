@@ -86,10 +86,24 @@ class AuditAPI {
 
         try {
             const response = await fetch(url, config);
-            const data = await response.json();
+            
+            // Verificar si la respuesta tiene contenido antes de parsear JSON
+            const contentType = response.headers.get('content-type');
+            const hasJsonContent = contentType && contentType.includes('application/json');
+            
+            let data = null;
+            if (hasJsonContent) {
+                const text = await response.text();
+                data = text ? JSON.parse(text) : null;
+            } else {
+                // Para respuestas no-JSON (como 204 No Content), leer como texto
+                const text = await response.text();
+                data = text ? text : null;
+            }
 
             if (!response.ok) {
-                throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                const errorMessage = data && data.error ? data.error : `HTTP error! status: ${response.status}`;
+                throw new Error(errorMessage);
             }
 
             return data;
