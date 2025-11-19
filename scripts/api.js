@@ -5,7 +5,7 @@ class AuditAPI {
         this.baseURL = this.config.API_BASE_URL;
         this.supabaseURL = this.config.SUPABASE_URL;
         this.supabaseKey = this.config.SUPABASE_ANON_KEY;
-        this.tableName = 'docaudit';
+        this.tableName = 'dotaudit';
         this.endpoints = {
             audits: `/rest/v1/${this.tableName}`,
             audit: (id) => `/rest/v1/${this.tableName}?id=eq.${id}`,
