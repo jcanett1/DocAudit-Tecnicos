@@ -1,13 +1,47 @@
 // Clase para manejar la API
 class AuditAPI {
     constructor() {
-        this.baseURL = window.CONFIG.API_BASE_URL;
+        this.config = this.getConfig();
+        this.baseURL = this.config.API_BASE_URL;
         this.endpoints = {
             audits: '/api/audits',
             audit: (id) => `/api/audits/${id}`,
             stats: '/api/stats',
             health: '/health'
         };
+    }
+
+    // Obtener configuración de forma segura
+    getConfig() {
+        const defaultConfig = {
+            API_BASE_URL: 'http://localhost:3001',
+            VALIDATION: {
+                REQUIRED_FIELDS: ['checked_by', 'audit_date', 'build_cell', 'errors_found'],
+                MAX_NOTES_LENGTH: 1000
+            },
+            AUDITORS: ['Karla', 'Adrián', 'Carmen'],
+            BUILD_CELLS: ['5', '10', '11', '15', '16', 'kiteo', 'otras'],
+            ERROR_TYPES: {
+                components: 'Components',
+                tipping: 'Tipping',
+                hosel_setting: 'Hosel Setting',
+                shaft_stepping: 'Shaft Stepping',
+                wood_putter_weights: 'Wood/Putter Weights',
+                club_length: 'Club Length',
+                shaft_alignment: 'Shaft Alignment',
+                ferrules: 'Ferrules',
+                loft: 'Loft',
+                lie: 'Lie',
+                grip_alignment: 'Grip Alignment',
+                grip_length: 'Grip Length',
+                wraps: 'Wraps',
+                swing_weight: 'Swing Weight',
+                cleanliness: 'Cleanliness',
+                boxing: 'Boxing'
+            }
+        };
+        
+        return window.CONFIG || defaultConfig;
     }
 
     // Función auxiliar para hacer peticiones
@@ -139,7 +173,7 @@ class AuditAPI {
 
     // Validar datos antes de enviar
     validateAuditData(data) {
-        const requiredFields = window.CONFIG.VALIDATION.REQUIRED_FIELDS;
+        const requiredFields = this.config.VALIDATION.REQUIRED_FIELDS;
         const errors = [];
 
         // Verificar campos requeridos
@@ -150,12 +184,12 @@ class AuditAPI {
         });
 
         // Validar auditor
-        if (data.checked_by && !window.CONFIG.AUDITORS.includes(data.checked_by)) {
+        if (data.checked_by && !this.config.AUDITORS.includes(data.checked_by)) {
             errors.push('Auditor inválido');
         }
 
         // Validar celda de construcción
-        if (data.build_cell && !window.CONFIG.BUILD_CELLS.includes(data.build_cell)) {
+        if (data.build_cell && !this.config.BUILD_CELLS.includes(data.build_cell)) {
             errors.push('Celda de construcción inválida');
         }
 
@@ -181,8 +215,8 @@ class AuditAPI {
         }
 
         // Validar longitud de notas
-        if (data.notes && data.notes.length > window.CONFIG.VALIDATION.MAX_NOTES_LENGTH) {
-            errors.push(`Las notas no pueden exceder ${window.CONFIG.VALIDATION.MAX_NOTES_LENGTH} caracteres`);
+        if (data.notes && data.notes.length > this.config.VALIDATION.MAX_NOTES_LENGTH) {
+            errors.push(`Las notas no pueden exceder ${this.config.VALIDATION.MAX_NOTES_LENGTH} caracteres`);
         }
 
         return {
@@ -240,7 +274,7 @@ class AuditAPI {
         data.notes = formData.notes;
 
         // Campos de error
-        const errorFields = Object.keys(window.CONFIG.ERROR_TYPES);
+        const errorFields = Object.keys(this.config.ERROR_TYPES);
         errorFields.forEach(field => {
             const formField = `${field}_error`;
             data[formField] = formData[formField] ? parseInt(formData[formField]) : 0;
