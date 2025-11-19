@@ -86,4 +86,6 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = getConfig();
 } else {
     window.CONFIG = getConfig();
+    // Asegurar que esté disponible inmediatamente
+    console.log('CONFIG loaded:', window.CONFIG);
 }
