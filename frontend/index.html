@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Auditoría de Golf</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-golf-ball"></i> Sistema de Auditoría de Golf</h1>
+                <div class="header-actions">
+                    <button id="statsBtn" class="btn btn-secondary">
+                        <i class="fas fa-chart-bar"></i> Estadísticas
+                    </button>
+                    <button id="newAuditBtn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Nueva Auditoría
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Filtros -->
+            <div class="filters-section">
+                <div class="filters-container">
+                    <div class="filter-group">
+                        <label for="filterAuditor">Filtrar por Auditor:</label>
+                        <select id="filterAuditor">
+                            <option value="">Todos los auditores</option>
+                            <option value="Karla">Karla</option>
+                            <option value="Adrián">Adrián</option>
+                            <option value="Carmen">Carmen</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="filterCell">Filtrar por Celda:</label>
+                        <select id="filterCell">
+                            <option value="">Todas las celdas</option>
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="15">15</option>
+                            <option value="16">16</option>
+                            <option value="kiteo">Kiteo</option>
+                            <option value="otras">Otras</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="filterDate">Fecha Desde:</label>
+                        <input type="date" id="filterDate">
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button id="applyFilters" class="btn btn-primary">
+                            <i class="fas fa-filter"></i> Aplicar
+                        </button>
+                        <button id="clearFilters" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de Auditorías -->
+            <div class="table-section">
+                <div class="table-container">
+                    <table id="auditsTable">
+                        <thead>
+                            <tr>
+                                <th>Fecha Auditoría</th>
+                                <th>Auditor</th>
+                                <th>Celda</th>
+                                <th>Orden</th>
+                                <th>Errores</th>
+                                <th>GC con Errores</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditsTableBody">
+                            <!-- Los datos se cargarán dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="loadingSpinner" class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Cargando auditorías...</p>
+                </div>
+                
+                <div id="noDataMessage" class="no-data-message" style="display: none;">
+                    <i class="fas fa-inbox"></i>
+                    <p>No se encontraron auditorías</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal para Nueva/Editar Auditoría -->
+    <div id="auditModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Nueva Auditoría</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            
+            <form id="auditForm" class="audit-form">
+                <div class="form-grid">
+                    <!-- Información Básica -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-info-circle"></i> Información Básica</h3>
+                        
+                        <div class="form-group">
+                            <label for="checked_by">Checked by:</label>
+                            <select id="checked_by" name="checked_by" required>
+                                <option value="">Seleccionar auditor</option>
+                                <option value="Karla">Karla</option>
+                                <option value="Adrián">Adrián</option>
+                                <option value="Carmen">Carmen</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="audit_date">Audit Date:</label>
+                            <input type="date" id="audit_date" name="audit_date" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="build_cell">Build Cell:</label>
+                            <select id="build_cell" name="build_cell" required>
+                                <option value="">Seleccionar celda</option>
+                                <option value="5">5</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="15">15</option>
+                                <option value="16">16</option>
+                                <option value="kiteo">Kiteo</option>
+                                <option value="otras">Otras</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Información de la Orden -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-shopping-cart"></i> Información de la Orden</h3>
+                        
+                        <div class="form-group">
+                            <label for="operadores">Operadores:</label>
+                            <input type="text" id="operadores" name="operadores" placeholder="Nombres de operadores">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="order_number">Order Number:</label>
+                            <input type="text" id="order_number" name="order_number" placeholder="Número de orden">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="sh">SH:</label>
+                            <input type="text" id="sh" name="sh" placeholder="SH">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="qty_of_gc_in_order">QTY of GC in order:</label>
+                            <input type="number" id="qty_of_gc_in_order" name="qty_of_gc_in_order" min="0" placeholder="0">
+                        </div>
+                    </div>
+
+                    <!-- Errores -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Errores</h3>
+                        
+                        <div class="form-group checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="errors_found" name="errors_found">
+                                ¿Se encontraron errores?
+                            </label>
+                        </div>
+                        
+                        <div class="form-group" id="gcWithErrorsGroup" style="display: none;">
+                            <label for="gc_with_errors">¿Cuántos palos con errores se encontraron?:</label>
+                            <input type="number" id="gc_with_errors" name="gc_with_errors" min="0" placeholder="0">
+                        </div>
+                    </div>
+
+                    <!-- Tipos de Errores -->
+                    <div class="form-section errors-section" id="errorTypesSection" style="display: none;">
+                        <h3><i class="fas fa-tools"></i> Tipo de errores por palos de Golf</h3>
+                        <p class="section-note">Valores de 0 a 4 (0=Sin errores, 4=Muy grave)</p>
+                        
+                        <div class="error-types-grid">
+                            <div class="error-type">
+                                <label for="components_error">Components:</label>
+                                <select id="components_error" name="components_error">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                            
+                            <div class="error-type">
+                                <label for="tipping_error">Tipping:</label>
+                                <select id="tipping_error" name="tipping_error">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                            
+                            <div class="error-type">
+                                <label for="hosel_setting_error">Hosel Setting:</label>
+                                <select id="hosel_setting_error" name="hosel_setting_error">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                            
+                            <div class="error-type">
+                                <label for="shaft_stepping_error">Shaft Stepping:</label>
+                                <select id="shaft_stepping_error" name="shaft_stepping_error">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                            
+                            <div class="error-type">
+                                <label for="wood_putter_weights_error">Wood/Putter Weights:</label>
+                                <select id="wood_putter_weights_error" name="wood_putter_weights_error">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                            
+                            <div class="error-type">
+                                <label for="club_length_error">Club Length:</label>
+                                <select id="club_length_error" name="club_length_error">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                            
+                            <div class="error-type">
+                                <label for="shaft_alignment_error">Shaft Alignment:</label>
+                                <select id="shaft_alignment_error" name="shaft_alignment_error">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                            
+                            <div class="error-type">
+                                <label for="ferrules_error">Ferrules:</label>
+                                <select id="ferrules_error" name="ferrules_error">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                            
+                            <div class="error-type">
+                                <label for="loft_error">Loft:</label>
+                                <select id="loft_error" name="loft_error">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                            
+                            <div class="error-type">
+                                <label for="lie_error">Lie:</label>
+                                <select id="lie_error" name="lie_error">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                            
+                            <div class="error-type">
+                                <label for="grip_alignment_error">Grip Alignment:</label>
+                                <select id="grip_alignment_error" name="grip_alignment_error">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                            
+                            <div class="error-type">
+                                <label for="grip_length_error">Grip Length:</label>
+                                <select id="grip_length_error" name="grip_length_error">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                            
+                            <div class="error-type">
+                                <label for="wraps_error">Wraps:</label>
+                                <select id="wraps_error" name="wraps_error">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                            
+                            <div class="error-type">
+                                <label for="swing_weight_error">Swing Weight:</label>
+                                <select id="swing_weight_error" name="swing_weight_error">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                            
+                            <div class="error-type">
+                                <label for="cleanliness_error">Cleanliness:</label>
+                                <select id="cleanliness_error" name="cleanliness_error">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                            
+                            <div class="error-type">
+                                <label for="boxing_error">Boxing:</label>
+                                <select id="boxing_error" name="boxing_error">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notas -->
+                    <div class="form-section full-width">
+                        <h3><i class="fas fa-sticky-note"></i> Notas</h3>
+                        <div class="form-group">
+                            <label for="notes">Notes / (Notas):</label>
+                            <textarea id="notes" name="notes" rows="4" placeholder="Agregar notas adicionales..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelBtn">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="saveBtn">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Estadísticas -->
+    <div id="statsModal" class="modal">
+        <div class="modal-content stats-modal">
+            <div class="modal-header">
+                <h2>Estadísticas de Auditorías</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            
+            <div class="stats-content">
+                <div id="statsData">
+                    <!-- Las estadísticas se cargarán dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notificaciones -->
+    <div id="notification" class="notification">
+        <div class="notification-content">
+            <span id="notificationMessage"></span>
+            <button class="notification-close">&times;</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="scripts/config.js"></script>
+    <script src="scripts/api.js"></script>
+    <script src="scripts/app.js"></script>
+</body>
+</html>

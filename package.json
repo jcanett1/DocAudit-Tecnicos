@@ -1,0 +1,35 @@
+{
+  "name": "audit-golf-system",
+  "version": "1.0.0",
+  "description": "Sistema completo de auditoría de equipos de golf - Full Stack",
+  "scripts": {
+    "install-backend": "cd backend && npm install",
+    "start-backend": "cd backend && npm start",
+    "dev-backend": "cd backend && npm run dev",
+    "test-backend": "cd backend && npm test",
+    "deploy-frontend": "echo 'Subir archivos de frontend/ a GitHub y habilitar GitHub Pages'",
+    "setup": "npm run install-backend && echo 'Instalación completada. Configurar .env en backend/'",
+    "start": "npm run start-backend",
+    "dev": "npm run dev-backend",
+    "health": "curl -f http://localhost:3001/health || echo 'Backend no está corriendo'",
+    "clean": "cd backend && rm -rf node_modules && rm -f package-lock.json"
+  },
+  "keywords": [
+    "golf",
+    "audit",
+    "fullstack",
+    "supabase",
+    "nodejs",
+    "express"
+  ],
+  "author": "MiniMax Agent",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tu-usuario/audit-golf-system.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tu-usuario/audit-golf-system/issues"
+  },
+  "homepage": "https://github.com/tu-usuario/audit-golf-system#readme"
+}
