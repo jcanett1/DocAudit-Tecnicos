@@ -3,18 +3,29 @@ class AuditAPI {
     constructor() {
         this.config = this.getConfig();
         this.baseURL = this.config.API_BASE_URL;
+        this.supabaseURL = this.config.SUPABASE_URL;
+        this.supabaseKey = this.config.SUPABASE_ANON_KEY;
+        this.tableName = 'docaudit';
         this.endpoints = {
-            audits: '/api/audits',
-            audit: (id) => `/api/audits/${id}`,
-            stats: '/api/stats',
-            health: '/health'
+            audits: `/rest/v1/${this.tableName}`,
+            audit: (id) => `/rest/v1/${this.tableName}?id=eq.${id}`,
+            stats: `/rest/v1/${this.tableName}?select=*`
         };
+        
+        console.log('🔧 API Constructor - Config loaded:', {
+            supabaseURL: this.supabaseURL,
+            supabaseKey: this.supabaseKey ? `${this.supabaseKey.substring(0, 20)}...` : 'undefined',
+            tableName: this.tableName,
+            endpoints: this.endpoints
+        });
     }
 
     // Obtener configuración de forma segura
     getConfig() {
         const defaultConfig = {
-            API_BASE_URL: 'http://localhost:3001',
+            SUPABASE_URL: 'https://hckbtzbcmijdstyazwoz.supabase.co',
+            SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhja2J0emJjbWlqZHN0eWF6d296Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1MDU4MDcsImV4cCI6MjA2NTA4MTgwN30.JfYJwuytLNXY42QcfjdilP4btvKu17gr84dbUQ_nMBk',
+            API_BASE_URL: 'https://hckbtzbcmijdstyazwoz.supabase.co/rest/v1',
             VALIDATION: {
                 REQUIRED_FIELDS: ['checked_by', 'audit_date', 'build_cell', 'errors_found'],
                 MAX_NOTES_LENGTH: 1000
@@ -46,11 +57,21 @@ class AuditAPI {
 
     // Función auxiliar para hacer peticiones
     async request(endpoint, options = {}) {
-        const url = `${this.baseURL}${endpoint}`;
+        console.log('🔍 Debug API Request:', {
+            supabaseURL: this.supabaseURL,
+            supabaseKey: this.supabaseKey ? `${this.supabaseKey.substring(0, 20)}...` : 'undefined',
+            endpoint: endpoint,
+            configAvailable: !!this.config
+        });
+        
+        const url = `${this.supabaseURL}${endpoint}`;
+        console.log('🔗 Full URL:', url);
         
         const defaultOptions = {
             headers: {
                 'Content-Type': 'application/json',
+                'apikey': this.supabaseKey,
+                'Authorization': `Bearer ${this.supabaseKey}`
             },
         };
 
@@ -96,7 +117,7 @@ class AuditAPI {
             }
 
             const response = await this.request(`${this.endpoints.audits}${queryString}`);
-            return response.data || [];
+            return response || [];
         } catch (error) {
             throw new Error(`Error al obtener auditorías: ${error.message}`);
         }
@@ -106,7 +127,7 @@ class AuditAPI {
     async getAudit(id) {
         try {
             const response = await this.request(this.endpoints.audit(id));
-            return response.data;
+            return response && response[0] ? response[0] : null;
         } catch (error) {
             throw new Error(`Error al obtener auditoría: ${error.message}`);
         }
@@ -119,7 +140,7 @@ class AuditAPI {
                 method: 'POST',
                 body: JSON.stringify(auditData),
             });
-            return response.data;
+            return response;
         } catch (error) {
             throw new Error(`Error al crear auditoría: ${error.message}`);
         }
@@ -129,10 +150,10 @@ class AuditAPI {
     async updateAudit(id, auditData) {
         try {
             const response = await this.request(this.endpoints.audit(id), {
-                method: 'PUT',
+                method: 'PATCH',
                 body: JSON.stringify(auditData),
             });
-            return response.data;
+            return response;
         } catch (error) {
             throw new Error(`Error al actualizar auditoría: ${error.message}`);
         }
@@ -144,7 +165,7 @@ class AuditAPI {
             const response = await this.request(this.endpoints.audit(id), {
                 method: 'DELETE',
             });
-            return response;
+            return response[0] || response;
         } catch (error) {
             throw new Error(`Error al eliminar auditoría: ${error.message}`);
         }
@@ -154,22 +175,13 @@ class AuditAPI {
     async getStats() {
         try {
             const response = await this.request(this.endpoints.stats);
-            return response.data;
+            return response;
         } catch (error) {
             throw new Error(`Error al obtener estadísticas: ${error.message}`);
         }
     }
 
-    // Verificar salud del servicio
-    async healthCheck() {
-        try {
-            const response = await this.request(this.endpoints.health);
-            return response.status === 'OK';
-        } catch (error) {
-            console.error('Health check failed:', error);
-            return false;
-        }
-    }
+
 
     // Validar datos antes de enviar
     validateAuditData(data) {
