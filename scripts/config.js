@@ -1,7 +1,13 @@
-// Configuración de la aplicación
+/ Configuración de la aplicación
 const CONFIG = {
-    // URL del backend API - cambiar según tu configuración
-    API_BASE_URL: process.env.API_BASE_URL || 'http://localhost:3001',
+    // URL de Supabase
+    SUPABASE_URL: 'https://hckbtzbcmijdstyazwoz.supabase.co',
+    
+    // Anon key de Supabase
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhja2J0emJjbWlqZHN0eWF6d296Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1MDU4MDcsImV4cCI6MjA2NTA4MTgwN30.JfYJwuytLNXY42QcfjdilP4btvKu17gr84dbUQ_nMBk',
+    
+    // URL del API (usando Supabase)
+    API_BASE_URL: 'https://hckbtzbcmijdstyazwoz.supabase.co/rest/v1',
     
     // Configuración de la aplicación
     APP_NAME: 'Sistema de Auditoría de Golf',
