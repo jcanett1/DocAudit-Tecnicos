@@ -1,4 +1,4 @@
-/ Configuración de la aplicación
+// Configuración de la aplicación
 const CONFIG = {
     // URL de Supabase
     SUPABASE_URL: 'https://hckbtzbcmijdstyazwoz.supabase.co',
