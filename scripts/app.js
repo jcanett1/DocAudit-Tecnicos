@@ -4,8 +4,29 @@ class AuditApp {
         this.audits = [];
         this.currentEditingId = null;
         this.filters = {};
+        this.config = this.getConfig();
         
         this.init();
+    }
+
+    // Obtener configuración de forma segura
+    getConfig() {
+        const defaultConfig = {
+            UI: {
+                UPDATE_SUCCESS_MESSAGE: 'Auditoría actualizada exitosamente',
+                SAVE_SUCCESS_MESSAGE: 'Auditoría guardada exitosamente',
+                CONFIRM_DELETE_MESSAGE: '¿Está seguro que desea eliminar esta auditoría?',
+                DELETE_SUCCESS_MESSAGE: 'Auditoría eliminada exitosamente'
+            },
+            NOTIFICATIONS: {
+                AUTO_HIDE_DELAY: 5000
+            },
+            VALIDATION: {
+                REQUIRED_FIELDS: ['checked_by', 'audit_date', 'build_cell', 'errors_found']
+            }
+        };
+        
+        return window.CONFIG || defaultConfig;
     }
 
     // Inicializar la aplicación
@@ -243,10 +264,10 @@ class AuditApp {
             // Guardar
             if (this.currentEditingId) {
                 await window.auditAPI.updateAudit(this.currentEditingId, formattedData);
-                this.showNotification(window.CONFIG.UI.UPDATE_SUCCESS_MESSAGE, 'success');
+                this.showNotification(this.config.UI.UPDATE_SUCCESS_MESSAGE, 'success');
             } else {
                 await window.auditAPI.createAudit(formattedData);
-                this.showNotification(window.CONFIG.UI.SAVE_SUCCESS_MESSAGE, 'success');
+                this.showNotification(this.config.UI.SAVE_SUCCESS_MESSAGE, 'success');
             }
 
             // Recargar datos
@@ -268,13 +289,13 @@ class AuditApp {
 
     // Eliminar auditoría
     async deleteAudit(auditId) {
-        if (!confirm(window.CONFIG.UI.CONFIRM_DELETE_MESSAGE)) {
+        if (!confirm(this.config.UI.CONFIRM_DELETE_MESSAGE)) {
             return;
         }
 
         try {
             await window.auditAPI.deleteAudit(auditId);
-            this.showNotification(window.CONFIG.UI.DELETE_SUCCESS_MESSAGE, 'success');
+            this.showNotification(this.config.UI.DELETE_SUCCESS_MESSAGE, 'success');
             await this.loadAudits();
         } catch (error) {
             this.showNotification(`Error: ${error.message}`, 'error');
@@ -384,9 +405,12 @@ class AuditApp {
         notification.className = `notification ${type} show`;
 
         // Auto-hide después de 5 segundos
+        const autoHideDelay = this.config && this.config.NOTIFICATIONS 
+            ? this.config.NOTIFICATIONS.AUTO_HIDE_DELAY 
+            : 5000; // Valor por defecto
         setTimeout(() => {
             this.hideNotification();
-        }, window.CONFIG.NOTIFICATIONS.AUTO_HIDE_DELAY);
+        }, autoHideDelay);
     }
 
     // Ocultar notificación
