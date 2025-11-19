@@ -23,6 +23,24 @@ class AuditApp {
             },
             VALIDATION: {
                 REQUIRED_FIELDS: ['checked_by', 'audit_date', 'build_cell', 'errors_found']
+            },
+            ERROR_TYPES: {
+                components: 'Components',
+                tipping: 'Tipping',
+                hosel_setting: 'Hosel Setting',
+                shaft_stepping: 'Shaft Stepping',
+                wood_putter_weights: 'Wood/Putter Weights',
+                club_length: 'Club Length',
+                shaft_alignment: 'Shaft Alignment',
+                ferrules: 'Ferrules',
+                loft: 'Loft',
+                lie: 'Lie',
+                grip_alignment: 'Grip Alignment',
+                grip_length: 'Grip Length',
+                wraps: 'Wraps',
+                swing_weight: 'Swing Weight',
+                cleanliness: 'Cleanliness',
+                boxing: 'Boxing'
             }
         };
         
@@ -269,7 +287,7 @@ class AuditApp {
         }
         
         // Campos de error (selects)
-        const errorFields = Object.keys(window.CONFIG.ERROR_TYPES);
+        const errorFields = Object.keys(this.config.ERROR_TYPES || {});
         errorFields.forEach(field => {
             const element = form.querySelector(`[name="${field}_error"]`);
             if (element) {
