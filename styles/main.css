@@ -102,6 +102,17 @@ body {
     box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
 }
 
+.btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
 /* Main Content */
 .main {
     flex: 1;
@@ -160,6 +171,12 @@ body {
 .filter-actions {
     display: flex;
     gap: 0.5rem;
+}
+
+.export-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: 1rem;
 }
 
 /* Tabla */
@@ -607,6 +624,12 @@ tbody tr:last-child td {
     
     .filter-actions {
         flex-direction: column;
+    }
+    
+    .export-actions {
+        flex-direction: column;
+        margin-left: 0;
+        margin-top: 0.5rem;
     }
     
     .form-grid {
