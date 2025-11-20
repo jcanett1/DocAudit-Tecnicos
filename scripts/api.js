@@ -106,10 +106,11 @@ class AuditAPI {
             let queryString = '';
             const params = new URLSearchParams();
 
-            // Agregar filtros como parámetros de consulta
+            // Agregar filtros usando sintaxis correcta de Supabase con operadores
             Object.keys(filters).forEach(key => {
                 if (filters[key] && filters[key] !== '') {
-                    params.append(key, filters[key]);
+                    // Usar operador eq. para igualdad exacta
+                    params.append(key, `eq.${filters[key]}`);
                 }
             });
 
