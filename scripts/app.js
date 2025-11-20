@@ -397,26 +397,52 @@ class AuditApp {
     }
 
     // Renderizar estadísticas
-    renderStats(stats) {
+    renderStats(audits) {
         const container = document.getElementById('statsData');
-        if (!container || !stats) return;
+        if (!container || !audits || !Array.isArray(audits)) return;
+
+        // Calcular estadísticas basándose en los datos reales
+        const totalAudits = audits.length;
+        const auditsWithErrors = audits.filter(audit => audit.errors_found).length;
+        const totalErrors = audits.reduce((sum, audit) => sum + (audit.gc_with_errors || 0), 0);
+        const auditsWithErrorsPercentage = totalAudits > 0 ? Math.round((auditsWithErrors / totalAudits) * 100) : 0;
+
+        // Agrupar por auditor
+        const statsByAuditor = audits.reduce((acc, audit) => {
+            const auditor = audit.checked_by || 'Sin asignar';
+            acc[auditor] = (acc[auditor] || 0) + 1;
+            return acc;
+        }, {});
+
+        // Agrupar por celda
+        const statsByCell = audits.reduce((acc, audit) => {
+            const cell = audit.build_cell || 'Sin asignar';
+            acc[cell] = (acc[cell] || 0) + 1;
+            return acc;
+        }, {});
+
+        // Obtener período (rango de fechas)
+        const dates = audits.map(audit => audit.audit_date).filter(date => date).sort();
+        const period = dates.length > 0 ? 
+            `${dates[0]} a ${dates[dates.length - 1]}` : 
+            'Sin datos de fecha';
 
         container.innerHTML = `
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-value">${stats.totalAudits}</div>
+                    <div class="stat-value">${totalAudits}</div>
                     <div class="stat-label">Total Auditorías</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">${stats.auditsWithErrors}</div>
+                    <div class="stat-value">${auditsWithErrors}</div>
                     <div class="stat-label">Con Errores</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">${stats.totalErrors}</div>
+                    <div class="stat-value">${totalErrors}</div>
                     <div class="stat-label">Total Errores</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">${stats.auditsWithErrorsPercentage}%</div>
+                    <div class="stat-value">${auditsWithErrorsPercentage}%</div>
                     <div class="stat-label">% Con Errores</div>
                 </div>
             </div>
@@ -424,7 +450,7 @@ class AuditApp {
             <div class="stats-breakdown">
                 <h4>Auditorías por Auditor</h4>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
-                    ${Object.entries(stats.statsByAuditor || {}).map(([auditor, count]) => `
+                    ${Object.entries(statsByAuditor).map(([auditor, count]) => `
                         <div style="text-align: center; padding: 1rem; background: white; border-radius: 6px;">
                             <div style="font-size: 1.5rem; font-weight: 700; color: #667eea;">${count}</div>
                             <div style="font-size: 0.875rem; color: #6c757d;">${auditor}</div>
@@ -436,7 +462,7 @@ class AuditApp {
             <div class="stats-breakdown" style="margin-top: 1.5rem;">
                 <h4>Auditorías por Celda</h4>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
-                    ${Object.entries(stats.statsByCell || {}).map(([cell, count]) => `
+                    ${Object.entries(statsByCell).map(([cell, count]) => `
                         <div style="text-align: center; padding: 1rem; background: white; border-radius: 6px;">
                             <div style="font-size: 1.5rem; font-weight: 700; color: #667eea;">${count}</div>
                             <div style="font-size: 0.875rem; color: #6c757d;">Celda ${cell}</div>
@@ -446,7 +472,7 @@ class AuditApp {
             </div>
             
             <div style="text-align: center; margin-top: 1.5rem; color: #6c757d; font-size: 0.875rem;">
-                <i class="fas fa-info-circle"></i> Período: ${stats.period}
+                <i class="fas fa-info-circle"></i> Período: ${period}
             </div>
         `;
     }
