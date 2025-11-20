@@ -681,8 +681,8 @@ class AuditApp {
             worksheet['!cols'] = columnWidths;
             
             // Generar nombre del archivo con fecha actual
-            const today = new Date().toISOString().split('T')[0];
-            const filename = `Auditorias_Golf_${today}.xlsx`;
+            let todayStr = new Date().toISOString().split('T')[0];
+            const filename = `Auditorias_Golf_${todayStr}.xlsx`;
             
             // Descargar archivo
             XLSX.writeFile(workbook, filename);
@@ -719,9 +719,9 @@ class AuditApp {
             doc.text('Sistema de Auditoría de Golf', 148, 20, { align: 'center' });
             
             // Fecha de generación
-            const today = new Date();
+            let todayObj = new Date();
             doc.setFontSize(10);
-            doc.text(`Generado el: ${today.toLocaleDateString('es-ES')} a las ${today.toLocaleTimeString('es-ES')}`, 148, 30, { align: 'center' });
+            doc.text(`Generado el: ${todayObj.toLocaleDateString('es-ES')} a las ${todayObj.toLocaleTimeString('es-ES')}`, 148, 30, { align: 'center' });
             
             // Información de filtros aplicados
             let filterInfo = 'Sin filtros aplicados';
@@ -807,8 +807,8 @@ class AuditApp {
             });
             
             // Generar nombre del archivo con fecha actual
-            const today = new Date().toISOString().split('T')[0];
-            const filename = `Auditorias_Golf_${today}.pdf`;
+            let todayPdfStr = new Date().toISOString().split('T')[0];
+            const filename = `Auditorias_Golf_${todayPdfStr}.pdf`;
             
             // Descargar archivo
             doc.save(filename);
