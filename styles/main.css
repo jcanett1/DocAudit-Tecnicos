@@ -171,12 +171,8 @@ body {
 .filter-actions {
     display: flex;
     gap: 0.5rem;
-}
-
-.export-actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-left: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
 }
 
 /* Tabla */
@@ -624,12 +620,7 @@ tbody tr:last-child td {
     
     .filter-actions {
         flex-direction: column;
-    }
-    
-    .export-actions {
-        flex-direction: column;
-        margin-left: 0;
-        margin-top: 0.5rem;
+        align-items: stretch;
     }
     
     .form-grid {
