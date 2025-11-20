@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de DocAudit-Tecnicos</title>
+    <title>Sistema de Auditoría de Golf</title>
     <link rel="stylesheet" href="styles/main.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -13,7 +13,7 @@
         <!-- Header -->
         <header class="header">
             <div class="header-content">
-                <h1><i class="fas fa-golf-ball"></i> Sistema de DocAudit-Tecnicos</h1>
+                <h1><i class="fas fa-golf-ball"></i> Sistema de Auditoría de Golf</h1>
                 <div class="header-actions">
                     <button id="statsBtn" class="btn btn-secondary">
                         <i class="fas fa-chart-bar"></i> Estadísticas
@@ -195,183 +195,87 @@
                     <!-- Tipos de Errores -->
                     <div class="form-section errors-section" id="errorTypesSection" style="display: none;">
                         <h3><i class="fas fa-tools"></i> Tipo de errores por palos de Golf</h3>
-                        <p class="section-note">Valores de 0 a 4 (0=Sin errores, 4=Muy grave)</p>
+                        <p class="section-note">Valores de 0 a 14 Max (0=Sin errores, 14=Muy grave)</p>
                         
                         <div class="error-types-grid">
                             <div class="error-type">
                                 <label for="components_error">Components:</label>
-                                <select id="components_error" name="components_error">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
+                                <input type="number" id="components_error" name="components_error" min="0" value="0" placeholder="0" style="width: 60px; text-align: center;">
                             </div>
                             
                             <div class="error-type">
                                 <label for="tipping_error">Tipping:</label>
-                                <select id="tipping_error" name="tipping_error">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
+                                <input type="number" id="tipping_error" name="tipping_error" min="0" value="0" placeholder="0" style="width: 60px; text-align: center;">
                             </div>
                             
                             <div class="error-type">
                                 <label for="hosel_setting_error">Hosel Setting:</label>
-                                <select id="hosel_setting_error" name="hosel_setting_error">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
+                                <input type="number" id="hosel_setting_error" name="hosel_setting_error" min="0" value="0" placeholder="0" style="width: 60px; text-align: center;">
                             </div>
                             
                             <div class="error-type">
                                 <label for="shaft_stepping_error">Shaft Stepping:</label>
-                                <select id="shaft_stepping_error" name="shaft_stepping_error">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
+                                <input type="number" id="shaft_stepping_error" name="shaft_stepping_error" min="0" value="0" placeholder="0" style="width: 60px; text-align: center;">
                             </div>
                             
                             <div class="error-type">
                                 <label for="wood_putter_weights_error">Wood/Putter Weights:</label>
-                                <select id="wood_putter_weights_error" name="wood_putter_weights_error">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
+                                <input type="number" id="wood_putter_weights_error" name="wood_putter_weights_error" min="0" value="0" placeholder="0" style="width: 60px; text-align: center;">
                             </div>
                             
                             <div class="error-type">
                                 <label for="club_length_error">Club Length:</label>
-                                <select id="club_length_error" name="club_length_error">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
+                                <input type="number" id="club_length_error" name="club_length_error" min="0" value="0" placeholder="0" style="width: 60px; text-align: center;">
                             </div>
                             
                             <div class="error-type">
                                 <label for="shaft_alignment_error">Shaft Alignment:</label>
-                                <select id="shaft_alignment_error" name="shaft_alignment_error">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
+                                <input type="number" id="shaft_alignment_error" name="shaft_alignment_error" min="0" value="0" placeholder="0" style="width: 60px; text-align: center;">
                             </div>
                             
                             <div class="error-type">
                                 <label for="ferrules_error">Ferrules:</label>
-                                <select id="ferrules_error" name="ferrules_error">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
+                                <input type="number" id="ferrules_error" name="ferrules_error" min="0" value="0" placeholder="0" style="width: 60px; text-align: center;">
                             </div>
                             
                             <div class="error-type">
                                 <label for="loft_error">Loft:</label>
-                                <select id="loft_error" name="loft_error">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
+                                <input type="number" id="loft_error" name="loft_error" min="0" value="0" placeholder="0" style="width: 60px; text-align: center;">
                             </div>
                             
                             <div class="error-type">
                                 <label for="lie_error">Lie:</label>
-                                <select id="lie_error" name="lie_error">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
+                                <input type="number" id="lie_error" name="lie_error" min="0" value="0" placeholder="0" style="width: 60px; text-align: center;">
                             </div>
                             
                             <div class="error-type">
                                 <label for="grip_alignment_error">Grip Alignment:</label>
-                                <select id="grip_alignment_error" name="grip_alignment_error">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
+                                <input type="number" id="grip_alignment_error" name="grip_alignment_error" min="0" value="0" placeholder="0" style="width: 60px; text-align: center;">
                             </div>
                             
                             <div class="error-type">
                                 <label for="grip_length_error">Grip Length:</label>
-                                <select id="grip_length_error" name="grip_length_error">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
+                                <input type="number" id="grip_length_error" name="grip_length_error" min="0" value="0" placeholder="0" style="width: 60px; text-align: center;">
                             </div>
                             
                             <div class="error-type">
                                 <label for="wraps_error">Wraps:</label>
-                                <select id="wraps_error" name="wraps_error">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
+                                <input type="number" id="wraps_error" name="wraps_error" min="0" value="0" placeholder="0" style="width: 60px; text-align: center;">
                             </div>
                             
                             <div class="error-type">
                                 <label for="swing_weight_error">Swing Weight:</label>
-                                <select id="swing_weight_error" name="swing_weight_error">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
+                                <input type="number" id="swing_weight_error" name="swing_weight_error" min="0" value="0" placeholder="0" style="width: 60px; text-align: center;">
                             </div>
                             
                             <div class="error-type">
                                 <label for="cleanliness_error">Cleanliness:</label>
-                                <select id="cleanliness_error" name="cleanliness_error">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
+                                <input type="number" id="cleanliness_error" name="cleanliness_error" min="0" value="0" placeholder="0" style="width: 60px; text-align: center;">
                             </div>
                             
                             <div class="error-type">
                                 <label for="boxing_error">Boxing:</label>
-                                <select id="boxing_error" name="boxing_error">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
+                                <input type="number" id="boxing_error" name="boxing_error" min="0" value="0" placeholder="0" style="width: 60px; text-align: center;">
                             </div>
                         </div>
                     </div>
