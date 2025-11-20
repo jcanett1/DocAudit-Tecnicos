@@ -100,19 +100,27 @@ class AuditAPI {
         }
     }
 
-    // Obtener todas las auditorías
+    // Obtener todas las auditorías con paginación
     async getAudits(filters = {}) {
         try {
             let queryString = '';
             const params = new URLSearchParams();
 
+            // Separar filtros de paginación
+            const { limit = 50, offset = 0, ...filterParams } = filters;
+
             // Agregar filtros usando sintaxis correcta de Supabase con operadores
-            Object.keys(filters).forEach(key => {
-                if (filters[key] && filters[key] !== '') {
+            Object.keys(filterParams).forEach(key => {
+                if (filterParams[key] && filterParams[key] !== '') {
                     // Usar operador eq. para igualdad exacta
-                    params.append(key, `eq.${filters[key]}`);
+                    params.append(key, `eq.${filterParams[key]}`);
                 }
             });
+
+            // Agregar parámetros de paginación
+            params.append('limit', limit);
+            params.append('offset', offset);
+            params.append('order', 'audit_date.desc'); // Ordenar por fecha descendente
 
             if (params.toString()) {
                 queryString = `?${params.toString()}`;
@@ -123,6 +131,32 @@ class AuditAPI {
             return Array.isArray(response) ? response : (response || []);
         } catch (error) {
             throw new Error(`Error al obtener auditorías: ${error.message}`);
+        }
+    }
+
+    // Obtener el total de registros (para paginación)
+    async getAuditsCount(filters = {}) {
+        try {
+            let queryString = '';
+            const params = new URLSearchParams();
+
+            // Solo aplicar filtros, sin paginación
+            Object.keys(filters).forEach(key => {
+                if (filters[key] && filters[key] !== '') {
+                    params.append(key, `eq.${filters[key]}`);
+                }
+            });
+
+            if (params.toString()) {
+                queryString = `?${params.toString()}`;
+            }
+
+            const response = await this.request(`${this.endpoints.audits}${queryString}`);
+            // Contar elementos en la respuesta
+            return Array.isArray(response) ? response.length : 0;
+        } catch (error) {
+            console.error('Error getting count:', error);
+            return 0;
         }
     }
 
