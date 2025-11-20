@@ -86,6 +86,10 @@ class AuditApp {
         document.getElementById('applyFilters')?.addEventListener('click', () => this.applyFilters());
         document.getElementById('clearFilters')?.addEventListener('click', () => this.clearFilters());
 
+        // Exportar datos
+        document.getElementById('exportExcelBtn')?.addEventListener('click', () => this.exportToExcel());
+        document.getElementById('exportPdfBtn')?.addEventListener('click', () => this.exportToPDF());
+
         // Modal
         document.querySelectorAll('.modal-close').forEach(btn => {
             btn.addEventListener('click', (e) => this.closeModal(e.target.closest('.modal')));
@@ -611,6 +615,209 @@ class AuditApp {
         const notification = document.getElementById('notification');
         if (notification) {
             notification.classList.remove('show');
+        }
+    }
+
+    // Exportar datos a Excel
+    async exportToExcel() {
+        try {
+            this.showNotification('Preparando exportación a Excel...', 'info');
+            
+            // Obtener todos los datos sin límites de paginación
+            const allAudits = await window.auditAPI.getAudits(this.filters, 1, 999999);
+            
+            // Preparar datos para Excel
+            const excelData = allAudits.map((audit, index) => {
+                // Calcular total de errores
+                const errorTypes = [
+                    'components_error', 'tipping_error', 'hosel_setting_error', 'shaft_stepping_error',
+                    'wood_putter_weights_error', 'club_length_error', 'shaft_alignment_error', 'ferrules_error',
+                    'loft_error', 'lie_error', 'grip_alignment_error', 'grip_length_error', 'wraps_error',
+                    'swing_weight_error', 'cleanliness_error', 'boxing_error'
+                ];
+                
+                const totalErrors = errorTypes.reduce((sum, errorType) => {
+                    return sum + (parseInt(audit[errorType]) || 0);
+                }, 0);
+
+                return {
+                    'Número': index + 1,
+                    'Fecha Auditoría': new Date(audit.audit_date).toLocaleDateString('es-ES'),
+                    'Auditor': audit.checked_by,
+                    'Celda': audit.build_cell,
+                    'Orden': audit.order_number || 'N/A',
+                    'SH': audit.sh || 'N/A',
+                    'QTY GC': audit.qty_of_gc_in_order || 0,
+                    'Errores Encontrados': audit.errors_found ? 'Sí' : 'No',
+                    'GC con Errores': audit.gc_with_errors || 0,
+                    'Total Errores': totalErrors,
+                    'Operadores': audit.operadores || 'N/A',
+                    'Notas': audit.notes || 'N/A'
+                };
+            });
+
+            // Crear worksheet
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            
+            // Crear workbook
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Auditorías');
+            
+            // Ajustar ancho de columnas
+            const columnWidths = [
+                { wch: 8 },   // Número
+                { wch: 15 },  // Fecha
+                { wch: 12 },  // Auditor
+                { wch: 8 },   // Celda
+                { wch: 12 },  // Orden
+                { wch: 8 },   // SH
+                { wch: 10 },  // QTY GC
+                { wch: 12 },  // Errores
+                { wch: 12 },  // GC con errores
+                { wch: 12 },  // Total errores
+                { wch: 15 },  // Operadores
+                { wch: 30 }   // Notas
+            ];
+            worksheet['!cols'] = columnWidths;
+            
+            // Generar nombre del archivo con fecha actual
+            const today = new Date().toISOString().split('T')[0];
+            const filename = `Auditorias_Golf_${today}.xlsx`;
+            
+            // Descargar archivo
+            XLSX.writeFile(workbook, filename);
+            
+            this.showNotification(`Excel exportado exitosamente (${excelData.length} registros)`, 'success');
+            
+        } catch (error) {
+            console.error('Error exportando a Excel:', error);
+            this.showNotification('Error al exportar a Excel', 'error');
+        }
+    }
+
+    // Exportar datos a PDF
+    async exportToPDF() {
+        try {
+            this.showNotification('Preparando exportación a PDF...', 'info');
+            
+            // Obtener todos los datos sin límites de paginación
+            const allAudits = await window.auditAPI.getAudits(this.filters, 1, 999999);
+            
+            // Crear documento PDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: 'a4'
+            });
+            
+            // Configurar fuente y tamaño
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(16);
+            
+            // Título del documento
+            doc.text('Sistema de Auditoría de Golf', 148, 20, { align: 'center' });
+            
+            // Fecha de generación
+            const today = new Date();
+            doc.setFontSize(10);
+            doc.text(`Generado el: ${today.toLocaleDateString('es-ES')} a las ${today.toLocaleTimeString('es-ES')}`, 148, 30, { align: 'center' });
+            
+            // Información de filtros aplicados
+            let filterInfo = 'Sin filtros aplicados';
+            if (Object.keys(this.filters).length > 0) {
+                const filters = [];
+                if (this.filters.checked_by) filters.push(`Auditor: ${this.filters.checked_by}`);
+                if (this.filters.build_cell) filters.push(`Celda: ${this.filters.build_cell}`);
+                if (this.filters.audit_date) filters.push(`Fecha desde: ${this.filters.audit_date}`);
+                filterInfo = filters.join(' | ');
+            }
+            doc.text(filterInfo, 148, 37, { align: 'center' });
+            
+            // Preparar datos para la tabla
+            const tableData = allAudits.map((audit, index) => {
+                // Calcular total de errores
+                const errorTypes = [
+                    'components_error', 'tipping_error', 'hosel_setting_error', 'shaft_stepping_error',
+                    'wood_putter_weights_error', 'club_length_error', 'shaft_alignment_error', 'ferrules_error',
+                    'loft_error', 'lie_error', 'grip_alignment_error', 'grip_length_error', 'wraps_error',
+                    'swing_weight_error', 'cleanliness_error', 'boxing_error'
+                ];
+                
+                const totalErrors = errorTypes.reduce((sum, errorType) => {
+                    return sum + (parseInt(audit[errorType]) || 0);
+                }, 0);
+
+                return [
+                    (index + 1).toString(),
+                    new Date(audit.audit_date).toLocaleDateString('es-ES'),
+                    audit.checked_by,
+                    audit.build_cell,
+                    audit.order_number || 'N/A',
+                    audit.sh || 'N/A',
+                    (audit.qty_of_gc_in_order || 0).toString(),
+                    audit.errors_found ? 'Sí' : 'No',
+                    (audit.gc_with_errors || 0).toString(),
+                    totalErrors.toString()
+                ];
+            });
+            
+            // Configurar tabla
+            const tableHeaders = ['N°', 'Fecha', 'Auditor', 'Celda', 'Orden', 'SH', 'QTY GC', 'Errores', 'GC Errores', 'Total Err'];
+            
+            // Generar tabla
+            doc.autoTable({
+                head: [tableHeaders],
+                body: tableData,
+                startY: 45,
+                styles: {
+                    fontSize: 8,
+                    cellPadding: 2
+                },
+                headStyles: {
+                    fillColor: [102, 126, 234],
+                    textColor: 255,
+                    fontSize: 9,
+                    fontStyle: 'bold'
+                },
+                alternateRowStyles: {
+                    fillColor: [245, 245, 245]
+                },
+                columnStyles: {
+                    0: { cellWidth: 12 }, // N°
+                    1: { cellWidth: 20 }, // Fecha
+                    2: { cellWidth: 20 }, // Auditor
+                    3: { cellWidth: 15 }, // Celda
+                    4: { cellWidth: 25 }, // Orden
+                    5: { cellWidth: 15 }, // SH
+                    6: { cellWidth: 15 }, // QTY GC
+                    7: { cellWidth: 15 }, // Errores
+                    8: { cellWidth: 18 }, // GC Errores
+                    9: { cellWidth: 18 }  // Total Err
+                },
+                margin: { top: 45, right: 10, bottom: 10, left: 10 },
+                didDrawPage: (data) => {
+                    // Pie de página
+                    const pageSize = doc.internal.pageSize;
+                    const pageHeight = pageSize.height || pageSize.getHeight();
+                    doc.setFontSize(8);
+                    doc.text(`Página ${doc.internal.getNumberOfPages()}`, data.settings.margin.left, pageHeight - 10);
+                    doc.text(`${tableData.length} registros totales`, pageSize.width - data.settings.margin.right - 20, pageHeight - 10);
+                }
+            });
+            
+            // Generar nombre del archivo con fecha actual
+            const today = new Date().toISOString().split('T')[0];
+            const filename = `Auditorias_Golf_${today}.pdf`;
+            
+            // Descargar archivo
+            doc.save(filename);
+            
+            this.showNotification(`PDF exportado exitosamente (${tableData.length} registros)`, 'success');
+            
+        } catch (error) {
+            console.error('Error exportando a PDF:', error);
+            this.showNotification('Error al exportar a PDF', 'error');
         }
     }
 }
