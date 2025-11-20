@@ -144,6 +144,7 @@ class AuditApp {
                 <td>${audit.checked_by}</td>
                 <td>${audit.build_cell}</td>
                 <td>${audit.order_number || '-'}</td>
+                <td>${audit.sh || '-'}</td>
                 <td>
                     <span class="badge ${audit.errors_found ? 'badge-danger' : 'badge-success'}">
                         ${audit.errors_found ? 'Sí' : 'No'}
