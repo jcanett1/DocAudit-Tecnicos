@@ -9,15 +9,10 @@ class AuditAPI {
         this.endpoints = {
             audits: `/rest/v1/${this.tableName}`,
             audit: (id) => `/rest/v1/${this.tableName}?id=eq.${id}`,
+            auditDelete: (id) => `/rest/v1/${this.tableName}?id=eq.${id}`,
             stats: `/rest/v1/${this.tableName}?select=*`
         };
-        
-        console.log('🔧 API Constructor - Config loaded:', {
-            supabaseURL: this.supabaseURL,
-            supabaseKey: this.supabaseKey ? `${this.supabaseKey.substring(0, 20)}...` : 'undefined',
-            tableName: this.tableName,
-            endpoints: this.endpoints
-        });
+
     }
 
     // Obtener configuración de forma segura
@@ -57,15 +52,7 @@ class AuditAPI {
 
     // Función auxiliar para hacer peticiones
     async request(endpoint, options = {}) {
-        console.log('🔍 Debug API Request:', {
-            supabaseURL: this.supabaseURL,
-            supabaseKey: this.supabaseKey ? `${this.supabaseKey.substring(0, 20)}...` : 'undefined',
-            endpoint: endpoint,
-            configAvailable: !!this.config
-        });
-        
         const url = `${this.supabaseURL}${endpoint}`;
-        console.log('🔗 Full URL:', url);
         
         const defaultOptions = {
             headers: {
@@ -131,7 +118,8 @@ class AuditAPI {
             }
 
             const response = await this.request(`${this.endpoints.audits}${queryString}`);
-            return response || [];
+            // Supabase puede devolver un array o null para respuestas vacías
+            return Array.isArray(response) ? response : (response || []);
         } catch (error) {
             throw new Error(`Error al obtener auditorías: ${error.message}`);
         }
@@ -140,8 +128,15 @@ class AuditAPI {
     // Obtener una auditoría por ID
     async getAudit(id) {
         try {
-            const response = await this.request(this.endpoints.audit(id));
-            return response && response[0] ? response[0] : null;
+            const endpoint = `/rest/v1/${this.tableName}?id=eq.${id}&select=*`;
+            const response = await this.request(endpoint);
+            
+            // Supabase devuelve un array para consultas por ID
+            if (Array.isArray(response) && response.length > 0) {
+                return response[0];
+            }
+            
+            return null;
         } catch (error) {
             throw new Error(`Error al obtener auditoría: ${error.message}`);
         }
@@ -154,7 +149,8 @@ class AuditAPI {
                 method: 'POST',
                 body: JSON.stringify(auditData),
             });
-            return response;
+            // Para POST exitoso, Supabase puede devolver el objeto creado o respuesta vacía
+            return response || { success: true };
         } catch (error) {
             throw new Error(`Error al crear auditoría: ${error.message}`);
         }
@@ -163,11 +159,13 @@ class AuditAPI {
     // Actualizar auditoría
     async updateAudit(id, auditData) {
         try {
-            const response = await this.request(this.endpoints.audit(id), {
+            const endpoint = `/rest/v1/${this.tableName}?id=eq.${id}`;
+            const response = await this.request(endpoint, {
                 method: 'PATCH',
                 body: JSON.stringify(auditData),
             });
-            return response;
+            // PATCH exitoso de Supabase puede devolver respuesta vacía o datos actualizados
+            return response || { success: true, updated: id };
         } catch (error) {
             throw new Error(`Error al actualizar auditoría: ${error.message}`);
         }
@@ -176,10 +174,13 @@ class AuditAPI {
     // Eliminar auditoría
     async deleteAudit(id) {
         try {
-            const response = await this.request(this.endpoints.audit(id), {
+            // Usar endpoint específico para DELETE con formato correcto
+            const endpoint = `/rest/v1/${this.tableName}?id=eq.${id}`;
+            const response = await this.request(endpoint, {
                 method: 'DELETE',
             });
-            return response[0] || response;
+            // DELETE exitoso de Supabase devuelve respuesta vacía (204 No Content)
+            return { success: true, deleted: id };
         } catch (error) {
             throw new Error(`Error al eliminar auditoría: ${error.message}`);
         }
@@ -189,7 +190,16 @@ class AuditAPI {
     async getStats() {
         try {
             const response = await this.request(this.endpoints.stats);
-            return response;
+            // Manejar tanto arrays como respuestas vacías
+            if (Array.isArray(response)) {
+                return response;
+            } else if (response) {
+                // Si es un objeto no-array, devolverlo como array
+                return [response];
+            } else {
+                // Si es null/undefined, devolver array vacío
+                return [];
+            }
         } catch (error) {
             throw new Error(`Error al obtener estadísticas: ${error.message}`);
         }
