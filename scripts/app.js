@@ -6,6 +6,12 @@ class AuditApp {
         this.filters = {};
         this.config = this.getConfig();
         
+        // Variables de paginación
+        this.currentPage = 1;
+        this.pageSize = 50;
+        this.totalRecords = 0;
+        this.totalPages = 0;
+        
         this.init();
     }
 
@@ -109,12 +115,30 @@ class AuditApp {
         });
     }
 
-    // Cargar auditorías
+    // Cargar auditorías con paginación
     async loadAudits() {
         try {
             this.showLoading(true);
-            this.audits = await window.auditAPI.getAudits(this.filters);
+            
+            // Calcular offset basado en página actual
+            const offset = (this.currentPage - 1) * this.pageSize;
+            
+            // Combinar filtros con paginación
+            const queryParams = {
+                ...this.filters,
+                limit: this.pageSize,
+                offset: offset
+            };
+            
+            // Cargar datos con paginación
+            this.audits = await window.auditAPI.getAudits(queryParams);
+            
+            // Obtener total de registros para calcular páginas
+            this.totalRecords = await window.auditAPI.getAuditsCount(this.filters);
+            this.totalPages = Math.ceil(this.totalRecords / this.pageSize);
+            
             this.renderTable();
+            this.renderPagination();
         } catch (error) {
             this.showNotification(`Error: ${error.message}`, 'error');
             console.error('Error loading audits:', error);
@@ -367,7 +391,9 @@ class AuditApp {
             build_cell: document.getElementById('filterCell').value,
             audit_date: document.getElementById('filterDate').value
         };
-
+        
+        // Resetear a primera página cuando se aplican filtros
+        this.currentPage = 1;
         await this.loadAudits();
     }
 
@@ -378,7 +404,91 @@ class AuditApp {
         document.getElementById('filterDate').value = '';
         
         this.filters = {};
+        this.currentPage = 1;
         await this.loadAudits();
+    }
+    
+    // Navegar a página específica
+    goToPage(page) {
+        if (page >= 1 && page <= this.totalPages && page !== this.currentPage) {
+            this.currentPage = page;
+            this.loadAudits();
+        }
+    }
+    
+    // Navegar a página anterior
+    previousPage() {
+        if (this.currentPage > 1) {
+            this.currentPage--;
+            this.loadAudits();
+        }
+    }
+    
+    // Navegar a página siguiente
+    nextPage() {
+        if (this.currentPage < this.totalPages) {
+            this.currentPage++;
+            this.loadAudits();
+        }
+    }
+    
+    // Renderizar controles de paginación
+    renderPagination() {
+        const paginationContainer = document.getElementById('paginationContainer');
+        if (!paginationContainer) return;
+        
+        if (this.totalPages <= 1) {
+            paginationContainer.innerHTML = '';
+            return;
+        }
+        
+        let paginationHTML = '<div class="pagination-controls">';
+        
+        // Información de página
+        paginationHTML += `
+            <div class="pagination-info">
+                Página ${this.currentPage} de ${this.totalPages} 
+                (${this.totalRecords} registros totales)
+            </div>
+        `;
+        
+        // Controles de navegación
+        paginationHTML += '<div class="pagination-buttons">';
+        
+        // Botón anterior
+        paginationHTML += `
+            <button ${this.currentPage === 1 ? 'disabled' : ''} 
+                    onclick="auditApp.previousPage()" 
+                    class="pagination-btn">
+                <i class="fas fa-chevron-left"></i> Anterior
+            </button>
+        `;
+        
+        // Números de página (máximo 5 páginas visibles)
+        const startPage = Math.max(1, this.currentPage - 2);
+        const endPage = Math.min(this.totalPages, this.currentPage + 2);
+        
+        for (let i = startPage; i <= endPage; i++) {
+            paginationHTML += `
+                <button ${i === this.currentPage ? 'class="pagination-btn active"' : 'class="pagination-btn"'}
+                        onclick="auditApp.goToPage(${i})">
+                    ${i}
+                </button>
+            `;
+        }
+        
+        // Botón siguiente
+        paginationHTML += `
+            <button ${this.currentPage === this.totalPages ? 'disabled' : ''} 
+                    onclick="auditApp.nextPage()" 
+                    class="pagination-btn">
+                Siguiente <i class="fas fa-chevron-right"></i>
+            </button>
+        `;
+        
+        paginationHTML += '</div></div>';
+        
+        paginationContainer.innerHTML = paginationHTML;
     }
 
     // Mostrar estadísticas
