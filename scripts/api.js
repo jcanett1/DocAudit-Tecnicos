@@ -330,17 +330,7 @@ class AuditAPI {
     // Formatear datos para el formulario
     formatAuditForForm(audit) {
         // CORRECCIÓN CRÍTICA: Formatear la fecha para que sea compatible con input type="date"
-        let formattedAuditDate = '';
-        if (audit.audit_date) {
-            // Si la fecha viene como string ISO o en otro formato, convertir a YYYY-MM-DD
-            const date = new Date(audit.audit_date);
-            if (!isNaN(date.getTime())) {
-                formattedAuditDate = date.toLocaleDateString('en-CA'); // Formato YYYY-MM-DD en zona local
-            } else {
-                // Si ya está en el formato correcto, usarla tal como está
-                formattedAuditDate = audit.audit_date;
-            }
-        }
+        const formattedAuditDate = this.formatDateSafely(audit.audit_date);
         
         return {
             checked_by: audit.checked_by || '',
@@ -372,6 +362,26 @@ class AuditAPI {
         };
     }
 
+    // Función auxiliar para formatear fecha correctamente
+    formatDateSafely(dateStr) {
+        if (!dateStr) return '';
+        
+        // Si ya está en formato YYYY-MM-DD, devolverlo tal como está
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            return dateStr;
+        }
+        
+        // Si no, intentar parsearla y formatearla
+        const date = new Date(dateStr);
+        if (!isNaN(date.getTime())) {
+            // Asegurar que sea fecha local, no UTC
+            const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            return localDate.toLocaleDateString('en-CA');
+        }
+        
+        return dateStr;
+    }
+
     // Formatear datos del formulario para la API
     formatFormData(formData) {
         const data = {};
@@ -379,22 +389,12 @@ class AuditAPI {
         // Campos básicos
         data.checked_by = formData.checked_by;
         
-        // CORRECCIÓN CRÍTICA: Asegurar que la fecha se mantenga en formato YYYY-MM-DD local
-        // Si la fecha viene del formulario en formato YYYY-MM-DD, mantenerla así para evitar conversión de zona horaria
-        if (formData.audit_date) {
-            // Si ya está en formato YYYY-MM-DD (como viene del input type="date"), mantenerla
-            if (/^\d{4}-\d{2}-\d{2}$/.test(formData.audit_date)) {
-                data.audit_date = formData.audit_date;
-            } else {
-                // Si no está en el formato correcto, intentar parsearla y formatearla
-                const date = new Date(formData.audit_date);
-                if (!isNaN(date.getTime())) {
-                    data.audit_date = date.toLocaleDateString('en-CA'); // Formato YYYY-MM-DD en zona local
-                } else {
-                    data.audit_date = formData.audit_date;
-                }
-            }
-        }
+        // CORRECCIÓN CRÍTICA: Formatear fecha de forma segura
+        data.audit_date = this.formatDateSafely(formData.audit_date);
+        
+        // Debug: Mostrar fecha formateada
+        console.log('formatFormData - Fecha original:', formData.audit_date);
+        console.log('formatFormData - Fecha formateada:', data.audit_date);
         
         data.build_cell = formData.build_cell;
         data.operadores = formData.operadores;
