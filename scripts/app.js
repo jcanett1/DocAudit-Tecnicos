@@ -17,14 +17,48 @@ class AuditApp {
 
     // Función auxiliar para obtener fecha en formato YYYY-MM-DD usando zona local
     getLocalDateString(date = new Date()) {
-        return date.toLocaleDateString('en-CA'); // Formato YYYY-MM-DD en zona local
+        // Crear una nueva fecha basada en la fecha local, no UTC
+        const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        return localDate.toLocaleDateString('en-CA'); // Formato YYYY-MM-DD en zona local
     }
 
     // Función auxiliar para obtener fecha de ayer en formato YYYY-MM-DD
     getYesterdayDateString() {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
+        const today = new Date();
+        const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
         return this.getLocalDateString(yesterday);
+    }
+
+    // Debug: Función para verificar la fecha actual
+    debugCurrentDate() {
+        const now = new Date();
+        const localDate = this.getLocalDateString();
+        console.log('Debug Fechas:');
+        console.log('Fecha actual (new Date()):', now.toString());
+        console.log('Fecha local:', localDate);
+        console.log('Fecha UTC:', now.toISOString().split('T')[0]);
+        console.log('Día de la semana:', now.toLocaleDateString('en-US', { weekday: 'long' }));
+        return localDate;
+    }
+
+    // Función auxiliar para formatear fecha de forma segura
+    formatDateSafely(dateStr) {
+        if (!dateStr) return '';
+        
+        // Si ya está en formato YYYY-MM-DD, devolverlo tal como está
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            return dateStr;
+        }
+        
+        // Si no, intentar parsearla y formatearla
+        const date = new Date(dateStr);
+        if (!isNaN(date.getTime())) {
+            // Asegurar que sea fecha local, no UTC
+            const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            return localDate.toLocaleDateString('en-CA');
+        }
+        
+        return dateStr;
     }
 
     // Obtener configuración de forma segura
@@ -70,6 +104,9 @@ class AuditApp {
         this.bindEvents();
         this.setupDateField();
         
+        // Debug: Mostrar información de fechas al inicializar
+        this.debugCurrentDate();
+        
         try {
             await this.loadAudits();
             this.showNotification('Aplicación cargada correctamente', 'success');
@@ -86,6 +123,9 @@ class AuditApp {
             // Usar fecha local del usuario usando función auxiliar
             const today = this.getLocalDateString();
             auditDateField.value = today;
+            
+            // Debug: Mostrar la fecha que se está configurando
+            console.log('setupDateField - Fecha configurada:', today);
         }
     }
 
@@ -212,13 +252,16 @@ class AuditApp {
         if (!dateString) return '-';
         
         try {
-            const date = new Date(dateString);
+            // CORRECCIÓN: Usar formateo seguro para evitar problemas de zona horaria
+            const formattedDate = this.formatDateSafely(dateString);
+            const date = new Date(formattedDate);
             return date.toLocaleDateString('es-ES', {
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit'
             });
         } catch (error) {
+            console.error('Error formatting date:', dateString, error);
             return dateString;
         }
     }
@@ -317,6 +360,10 @@ class AuditApp {
             }
         });
         
+        // Debug: Mostrar fecha extraída del formulario
+        console.log('extractFormData - Fecha extraída:', data.audit_date);
+        console.log('extractFormData - Todos los datos:', data);
+        
         // Checkbox - manejo especial
         const checkbox = form.querySelector('[name="errors_found"]');
         if (checkbox) {
@@ -358,6 +405,9 @@ class AuditApp {
 
             // Formatear datos para la API
             const formattedData = window.auditAPI.formatFormData(data);
+            
+            // Debug: Mostrar datos finales antes de guardar
+            console.log('handleFormSubmit - Datos finales a guardar:', formattedData);
 
             // Guardar
             if (this.currentEditingId) {
@@ -552,7 +602,8 @@ class AuditApp {
         const statsByDate = audits.reduce((acc, audit) => {
             if (!audit.audit_date) return acc;
             
-            const date = new Date(audit.audit_date).toLocaleDateString('en-CA'); // Formato YYYY-MM-DD en zona local
+            // Usar formateo seguro para evitar problemas de zona horaria
+            const date = this.formatDateSafely(audit.audit_date);
             if (!acc[date]) {
                 acc[date] = { total: 0, errors: 0 };
             }
@@ -563,18 +614,29 @@ class AuditApp {
             return acc;
         }, {});
 
-        // Obtener las fechas ordenadas
-        const sortedDates = Object.keys(statsByDate).sort().reverse(); // Más reciente primero
-        const last7Days = sortedDates.slice(0, 7); // Últimos 7 días
+        // CORRECCIÓN: Generar los últimos 7 días correctos desde la fecha actual local
+        const currentLocalDate = this.getLocalDateString(); // Fecha local YYYY-MM-DD
+        const last7Days = [];
+        
+        // Generar los últimos 7 días (incluyendo hoy)
+        for (let i = 0; i < 7; i++) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = this.getLocalDateString(date);
+            last7Days.push(dateStr);
+        }
+        
+        // Asegurar que tenemos exactamente 7 días en orden descendente (más reciente primero)
+        last7Days.sort().reverse();
         
         // Calcular estadísticas por día usando fecha local
-        const today = this.getLocalDateString(); // Fecha local YYYY-MM-DD
-        const yesterday = this.getYesterdayDateString();
+        const currentDate = this.getLocalDateString(); // Fecha local YYYY-MM-DD
+        const yesterdayDate = this.getYesterdayDateString();
         
-        const auditsToday = statsByDate[today]?.total || 0;
-        const auditsWithErrorsToday = statsByDate[today]?.errors || 0;
-        const auditsYesterday = statsByDate[yesterday]?.total || 0;
-        const auditsWithErrorsYesterday = statsByDate[yesterday]?.errors || 0;
+        const auditsToday = statsByDate[currentDate]?.total || 0;
+        const auditsWithErrorsToday = statsByDate[currentDate]?.errors || 0;
+        const auditsYesterday = statsByDate[yesterdayDate]?.total || 0;
+        const auditsWithErrorsYesterday = statsByDate[yesterdayDate]?.errors || 0;
         
         // Promedio de auditorías por día en los últimos 7 días
         const avgAuditsPerDay = last7Days.length > 0 ? 
@@ -653,7 +715,9 @@ class AuditApp {
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                     ${last7Days.length > 0 ? last7Days.map(date => {
                         const dateData = statsByDate[date];
-                        const formattedDate = new Date(date).toLocaleDateString('es-ES', { 
+                        // CORRECCIÓN: Usar formateo seguro para mostrar la fecha correctamente
+                        const dateObj = new Date(date);
+                        const formattedDate = dateObj.toLocaleDateString('es-ES', { 
                             weekday: 'short', 
                             month: 'short', 
                             day: 'numeric' 
@@ -735,7 +799,7 @@ class AuditApp {
 
                 return {
                     'Número': index + 1,
-                    'Fecha Auditoría': new Date(audit.audit_date).toLocaleDateString('es-ES'),
+                    'Fecha Auditoría': this.formatDate(audit.audit_date),
                     'Auditor': audit.checked_by,
                     'Celda': audit.build_cell,
                     'Orden': audit.order_number || 'N/A',
@@ -843,7 +907,7 @@ class AuditApp {
 
                 return [
                     (index + 1).toString(),
-                    new Date(audit.audit_date).toLocaleDateString('es-ES'),
+                    this.formatDate(audit.audit_date),
                     audit.checked_by,
                     audit.build_cell,
                     audit.order_number || 'N/A',
