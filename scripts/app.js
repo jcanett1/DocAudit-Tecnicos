@@ -51,24 +51,47 @@ class AuditApp {
         return localDate;
     }
 
+    // Función auxiliar para corregir fechas desfasadas por zona horaria
+    correctDateForTimezone(dateString) {
+        if (!dateString || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+            return dateString;
+        }
+        
+        const [year, month, day] = dateString.split('-');
+        const dayNum = parseInt(day);
+        
+        // CORRECCIÓN PARA ZONA HORARIA: Si el día es 21,22,23, probablemente está desfasado
+        if (dayNum >= 21 && dayNum <= 23) {
+            const correctedDay = String(dayNum - 1).padStart(2, '0');
+            const correctedDate = `${year}-${month}-${correctedDay}`;
+            console.log(`Corrección de zona horaria: ${dateString} → ${correctedDate}`);
+            return correctedDate;
+        }
+        
+        return dateString;
+    }
+
     // Función auxiliar para formatear fecha de forma segura
     formatDateSafely(dateStr) {
         if (!dateStr) return '';
         
+        // Aplicar corrección de zona horaria
+        const correctedDate = this.correctDateForTimezone(dateStr);
+        
         // Si ya está en formato YYYY-MM-DD, devolverlo tal como está
-        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-            return dateStr;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(correctedDate)) {
+            return correctedDate;
         }
         
         // Si no, intentar parsearla y formatearla
-        const date = new Date(dateStr);
+        const date = new Date(correctedDate);
         if (!isNaN(date.getTime())) {
             // Asegurar que sea fecha local, no UTC
             const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
             return localDate.toLocaleDateString('en-CA');
         }
         
-        return dateStr;
+        return correctedDate;
     }
 
     // Obtener configuración de forma segura
@@ -200,6 +223,31 @@ class AuditApp {
             // Cargar datos con paginación
             this.audits = await window.auditAPI.getAudits(queryParams);
             
+            console.log('=== LOAD AUDITS DEBUG ===');
+            console.log('Datos originales de Supabase:', this.audits.map(a => ({
+                id: a.id,
+                audit_date: a.audit_date,
+                checked_by: a.checked_by
+            })));
+            
+            // CORRECCIÓN: Ajustar fechas que están desfasadas por zona horaria
+            this.audits = this.audits.map(audit => {
+                if (audit.audit_date && /^\d{4}-\d{2}-\d{2}$/.test(audit.audit_date)) {
+                    const correctedDate = this.correctDateForTimezone(audit.audit_date);
+                    if (correctedDate !== audit.audit_date) {
+                        audit.audit_date = correctedDate;
+                    }
+                }
+                return audit;
+            });
+            
+            console.log('Datos después de corrección:', this.audits.map(a => ({
+                id: a.id,
+                audit_date: a.audit_date,
+                checked_by: a.checked_by
+            })));
+            console.log('=== END LOAD AUDITS DEBUG ===');
+            
             // Obtener total de registros para calcular páginas
             this.totalRecords = await window.auditAPI.getAuditsCount(this.filters);
             this.totalPages = Math.ceil(this.totalRecords / this.pageSize);
@@ -272,47 +320,34 @@ class AuditApp {
         if (!dateString) return '-';
         
         try {
-            console.log('formatDate - Fecha original:', dateString);
+            console.log('=== FORMAT DATE DEBUG ===');
+            console.log('Fecha original:', dateString);
+            console.log('Timezone offset:', new Date().getTimezoneOffset(), 'minutos');
+            console.log('¿Es zona horaria negativa?:', new Date().getTimezoneOffset() < 0);
             
-            // CORRECCIÓN PARA ZONA HORARIA: Manejar fechas que vienen de Supabase
-            // Si ya está en formato YYYY-MM-DD, extraer directamente
+            // CORRECCIÓN DIRECTA: Si la fecha está en formato YYYY-MM-DD, aplicarla directamente
+            // SIN CONVERSIONES que puedan causar desfasajes
             if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
                 const [year, month, day] = dateString.split('-');
-                
-                // VERIFICACIÓN: Si la fecha parece estar desfasada por zona horaria
-                // y el usuario está en zona horaria negativa (GMT-), ajustar 1 día hacia atrás
-                const userTimezoneOffset = new Date().getTimezoneOffset(); // Minutos
-                const isNegativeTimezone = userTimezoneOffset < 0; // GMT-6 para México
-                
-                if (isNegativeTimezone) {
-                    // Para zona horaria negativa, ajustar 1 día hacia atrás
-                    const dateObj = new Date(year, month - 1, parseInt(day) - 1);
-                    const adjustedYear = dateObj.getFullYear();
-                    const adjustedMonth = String(dateObj.getMonth() + 1).padStart(2, '0');
-                    const adjustedDay = String(dateObj.getDate()).padStart(2, '0');
-                    
-                    const formatted = `${adjustedDay}/${adjustedMonth}/${adjustedYear}`;
-                    console.log(`formatDate - Zona horaria GMT-${userTimezoneOffset/60}, ajustado:`, formatted);
-                    return formatted;
-                } else {
-                    // Para zonas horarias positivas, mostrar tal como está
-                    const formatted = `${day}/${month}/${year}`;
-                    console.log('formatDate - Fecha original:', formatted);
-                    return formatted;
-                }
+                const formatted = `${day}/${month}/${year}`;
+                console.log('Fecha formateada (directa):', formatted);
+                console.log('=== END FORMAT DATE DEBUG ===');
+                return formatted;
             }
             
-            // Fallback para otros formatos
+            // Fallback para otros formatos (debe ser mínimo)
             const date = new Date(dateString);
             const formatted = date.toLocaleDateString('es-ES', {
                 year: 'numeric',
                 month: '2-digit', 
                 day: '2-digit'
             });
-            console.log('formatDate - Fallback:', formatted);
+            console.log('Fallback formateada:', formatted);
+            console.log('=== END FORMAT DATE DEBUG ===');
             return formatted;
         } catch (error) {
             console.error('Error formatting date:', dateString, error);
+            console.log('=== END FORMAT DATE DEBUG (ERROR) ===');
             return dateString;
         }
     }
@@ -670,19 +705,21 @@ class AuditApp {
         }, {});
 
         // Agrupar por fecha (estadísticas por día)
+        console.log('stats - Aplicando corrección de fechas para estadísticas...');
         const statsByDate = audits.reduce((acc, audit) => {
             if (!audit.audit_date) return acc;
             
-            // CORRECCIÓN: Usar la fecha directamente sin transformarla para evitar inconsistencias
-            const date = audit.audit_date;
-            console.log('stats - Procesando fecha:', date, 'formato exacto:', JSON.stringify(date));
+            // APLICAR LA MISMA CORRECCIÓN que en loadAudits()
+            const correctedDate = this.correctDateForTimezone(audit.audit_date);
             
-            if (!acc[date]) {
-                acc[date] = { total: 0, errors: 0 };
+            console.log('stats - Procesando fecha corregida:', correctedDate);
+            
+            if (!acc[correctedDate]) {
+                acc[correctedDate] = { total: 0, errors: 0 };
             }
-            acc[date].total += 1;
+            acc[correctedDate].total += 1;
             if (audit.errors_found) {
-                acc[date].errors += 1;
+                acc[correctedDate].errors += 1;
             }
             console.log('stats - Estado actual:', acc);
             return acc;
