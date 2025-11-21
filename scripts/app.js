@@ -17,9 +17,12 @@ class AuditApp {
 
     // Función auxiliar para obtener fecha en formato YYYY-MM-DD usando zona local
     getLocalDateString(date = new Date()) {
-        // Crear una nueva fecha basada en la fecha local, no UTC
-        const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        return localDate.toLocaleDateString('en-CA'); // Formato YYYY-MM-DD en zona local
+        // CORRECCIÓN CRÍTICA: Crear fecha local sin conversión automática de zona horaria
+        // Usar método que garantiza fecha local del usuario
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 
     // Función auxiliar para obtener fecha de ayer en formato YYYY-MM-DD
@@ -33,10 +36,17 @@ class AuditApp {
     debugCurrentDate() {
         const now = new Date();
         const localDate = this.getLocalDateString();
-        console.log('Debug Fechas:');
+        console.log('Debug Fechas DETALLADO:');
         console.log('Fecha actual (new Date()):', now.toString());
-        console.log('Fecha local:', localDate);
-        console.log('Fecha UTC:', now.toISOString().split('T')[0]);
+        console.log(' getFullYear():', now.getFullYear());
+        console.log(' getMonth():', now.getMonth());
+        console.log(' getDate():', now.getDate());
+        console.log(' getHours():', now.getHours());
+        console.log(' getMinutes():', now.getMinutes());
+        console.log(' getTimezoneOffset():', now.getTimezoneOffset());
+        console.log(' toLocaleDateString(en-CA):', now.toLocaleDateString('en-CA'));
+        console.log(' this.getLocalDateString():', localDate);
+        console.log('Fecha UTC (ISO):', now.toISOString().split('T')[0]);
         console.log('Día de la semana:', now.toLocaleDateString('en-US', { weekday: 'long' }));
         return localDate;
     }
@@ -252,14 +262,26 @@ class AuditApp {
         if (!dateString) return '-';
         
         try {
-            // CORRECCIÓN: Usar formateo seguro para evitar problemas de zona horaria
-            const formattedDate = this.formatDateSafely(dateString);
-            const date = new Date(formattedDate);
-            return date.toLocaleDateString('es-ES', {
+            // CORRECCIÓN CRÍTICA: No aplicar conversiones de zona horaria que causen fechas anteriores
+            console.log('formatDate - Fecha original:', dateString);
+            
+            // Si ya está en formato YYYY-MM-DD, extraer directamente los componentes
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+                const [year, month, day] = dateString.split('-');
+                const formatted = `${day}/${month}/${year}`;
+                console.log('formatDate - Fecha formateada:', formatted);
+                return formatted;
+            }
+            
+            // Fallback para otros formatos
+            const date = new Date(dateString);
+            const formatted = date.toLocaleDateString('es-ES', {
                 year: 'numeric',
-                month: '2-digit',
+                month: '2-digit', 
                 day: '2-digit'
             });
+            console.log('formatDate - Fallback:', formatted);
+            return formatted;
         } catch (error) {
             console.error('Error formatting date:', dateString, error);
             return dateString;
@@ -580,6 +602,20 @@ class AuditApp {
         
         console.log('renderStats - Datos recibidos:', audits.length, 'auditorías');
         console.log('renderStats - Fechas de auditorías:', audits.map(a => a.audit_date).filter(Boolean));
+        console.log('renderStats - Fechas DEBUG:', audits.map(a => ({
+            id: a.id,
+            audit_date: a.audit_date,
+            tipo_dato: typeof a.audit_date,
+            longitud: a.audit_date ? a.audit_date.length : 'undefined'
+        })));
+        
+        // Mostrar fechas específicas de los primeros 5 registros
+        console.log('renderStats - Primeros 5 registros:', audits.slice(0, 5).map(a => ({
+            id: a.id,
+            audit_date: a.audit_date,
+            checked_by: a.checked_by,
+            build_cell: a.build_cell
+        })));
 
         // Calcular estadísticas basándose en los datos reales
         const totalAudits = audits.length;
