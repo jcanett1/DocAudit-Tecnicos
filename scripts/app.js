@@ -577,6 +577,9 @@ class AuditApp {
     renderStats(audits) {
         const container = document.getElementById('statsData');
         if (!container || !audits || !Array.isArray(audits)) return;
+        
+        console.log('renderStats - Datos recibidos:', audits.length, 'auditorías');
+        console.log('renderStats - Fechas de auditorías:', audits.map(a => a.audit_date).filter(Boolean));
 
         // Calcular estadísticas basándose en los datos reales
         const totalAudits = audits.length;
@@ -602,8 +605,10 @@ class AuditApp {
         const statsByDate = audits.reduce((acc, audit) => {
             if (!audit.audit_date) return acc;
             
-            // Usar formateo seguro para evitar problemas de zona horaria
-            const date = this.formatDateSafely(audit.audit_date);
+            // CORRECCIÓN: Usar la fecha directamente sin transformarla para evitar inconsistencias
+            const date = audit.audit_date;
+            console.log('stats - Procesando fecha:', date, 'formato exacto:', JSON.stringify(date));
+            
             if (!acc[date]) {
                 acc[date] = { total: 0, errors: 0 };
             }
@@ -611,6 +616,7 @@ class AuditApp {
             if (audit.errors_found) {
                 acc[date].errors += 1;
             }
+            console.log('stats - Estado actual:', acc);
             return acc;
         }, {});
 
@@ -618,16 +624,21 @@ class AuditApp {
         const currentLocalDate = this.getLocalDateString(); // Fecha local YYYY-MM-DD
         const last7Days = [];
         
+        console.log('stats - Fecha actual local:', currentLocalDate);
+        
         // Generar los últimos 7 días (incluyendo hoy)
         for (let i = 0; i < 7; i++) {
             const date = new Date();
             date.setDate(date.getDate() - i);
             const dateStr = this.getLocalDateString(date);
             last7Days.push(dateStr);
+            console.log(`stats - Día ${i}:`, dateStr);
         }
         
         // Asegurar que tenemos exactamente 7 días en orden descendente (más reciente primero)
         last7Days.sort().reverse();
+        console.log('stats - Últimos 7 días final:', last7Days);
+        console.log('stats - statsByDate keys:', Object.keys(statsByDate));
         
         // Calcular estadísticas por día usando fecha local
         const currentDate = this.getLocalDateString(); // Fecha local YYYY-MM-DD
@@ -715,6 +726,8 @@ class AuditApp {
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                     ${last7Days.length > 0 ? last7Days.map(date => {
                         const dateData = statsByDate[date] || { total: 0, errors: 0 };
+                        console.log(`stats - Mostrando día ${date}:`, dateData);
+                        
                         // CORRECCIÓN: Usar formateo seguro para mostrar la fecha correctamente
                         const dateObj = new Date(date + 'T12:00:00');
                         const formattedDate = dateObj.toLocaleDateString('es-ES', { 
