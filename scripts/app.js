@@ -640,11 +640,11 @@ class AuditApp {
         
         // Promedio de auditorías por día en los últimos 7 días
         const avgAuditsPerDay = last7Days.length > 0 ? 
-            Math.round(last7Days.reduce((sum, date) => sum + statsByDate[date].total, 0) / last7Days.length) : 0;
+            Math.round(last7Days.reduce((sum, date) => sum + (statsByDate[date]?.total || 0), 0) / last7Days.length) : 0;
         
         // Promedio de errores por día en los últimos 7 días
         const avgErrorsPerDay = last7Days.length > 0 ? 
-            Math.round(last7Days.reduce((sum, date) => sum + statsByDate[date].errors, 0) / last7Days.length) : 0;
+            Math.round(last7Days.reduce((sum, date) => sum + (statsByDate[date]?.errors || 0), 0) / last7Days.length) : 0;
 
         // Obtener período (rango de fechas)
         const dates = audits.map(audit => audit.audit_date).filter(date => date).sort();
@@ -714,9 +714,9 @@ class AuditApp {
                 <h4>Registros por Día (Últimos 7 días)</h4>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                     ${last7Days.length > 0 ? last7Days.map(date => {
-                        const dateData = statsByDate[date];
+                        const dateData = statsByDate[date] || { total: 0, errors: 0 };
                         // CORRECCIÓN: Usar formateo seguro para mostrar la fecha correctamente
-                        const dateObj = new Date(date);
+                        const dateObj = new Date(date + 'T12:00:00');
                         const formattedDate = dateObj.toLocaleDateString('es-ES', { 
                             weekday: 'short', 
                             month: 'short', 
