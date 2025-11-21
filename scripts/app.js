@@ -535,6 +535,42 @@ class AuditApp {
             return acc;
         }, {});
 
+        // Agrupar por fecha (estadísticas por día)
+        const statsByDate = audits.reduce((acc, audit) => {
+            if (!audit.audit_date) return acc;
+            
+            const date = new Date(audit.audit_date).toISOString().split('T')[0]; // Formato YYYY-MM-DD
+            if (!acc[date]) {
+                acc[date] = { total: 0, errors: 0 };
+            }
+            acc[date].total += 1;
+            if (audit.errors_found) {
+                acc[date].errors += 1;
+            }
+            return acc;
+        }, {});
+
+        // Obtener las fechas ordenadas
+        const sortedDates = Object.keys(statsByDate).sort().reverse(); // Más reciente primero
+        const last7Days = sortedDates.slice(0, 7); // Últimos 7 días
+        
+        // Calcular estadísticas por día
+        const today = new Date().toISOString().split('T')[0];
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+        
+        const auditsToday = statsByDate[today]?.total || 0;
+        const auditsWithErrorsToday = statsByDate[today]?.errors || 0;
+        const auditsYesterday = statsByDate[yesterday]?.total || 0;
+        const auditsWithErrorsYesterday = statsByDate[yesterday]?.errors || 0;
+        
+        // Promedio de auditorías por día en los últimos 7 días
+        const avgAuditsPerDay = last7Days.length > 0 ? 
+            Math.round(last7Days.reduce((sum, date) => sum + statsByDate[date].total, 0) / last7Days.length) : 0;
+        
+        // Promedio de errores por día en los últimos 7 días
+        const avgErrorsPerDay = last7Days.length > 0 ? 
+            Math.round(last7Days.reduce((sum, date) => sum + statsByDate[date].errors, 0) / last7Days.length) : 0;
+
         // Obtener período (rango de fechas)
         const dates = audits.map(audit => audit.audit_date).filter(date => date).sort();
         const period = dates.length > 0 ? 
@@ -559,6 +595,14 @@ class AuditApp {
                     <div class="stat-value">${auditsWithErrorsPercentage}%</div>
                     <div class="stat-label">% Con Errores</div>
                 </div>
+                <div class="stat-card">
+                    <div class="stat-value">${auditsToday}</div>
+                    <div class="stat-label">Registros Hoy</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${avgAuditsPerDay}</div>
+                    <div class="stat-label">Promedio/Día</div>
+                </div>
             </div>
             
             <div class="stats-breakdown">
@@ -582,6 +626,36 @@ class AuditApp {
                             <div style="font-size: 0.875rem; color: #6c757d;">Celda ${cell}</div>
                         </div>
                     `).join('')}
+                </div>
+            </div>
+            
+            <div class="stats-breakdown" style="margin-top: 1.5rem;">
+                <h4>Registros por Día (Últimos 7 días)</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    ${last7Days.length > 0 ? last7Days.map(date => {
+                        const dateData = statsByDate[date];
+                        const formattedDate = new Date(date).toLocaleDateString('es-ES', { 
+                            weekday: 'short', 
+                            month: 'short', 
+                            day: 'numeric' 
+                        });
+                        const errorRate = dateData.total > 0 ? Math.round((dateData.errors / dateData.total) * 100) : 0;
+                        return `
+                            <div style="text-align: center; padding: 1rem; background: white; border-radius: 6px; border-left: 4px solid ${errorRate > 0 ? '#dc3545' : '#28a745'};">
+                                <div style="font-size: 1.25rem; font-weight: 700; color: #667eea;">${dateData.total}</div>
+                                <div style="font-size: 0.75rem; color: #6c757d; margin: 0.25rem 0;">${formattedDate}</div>
+                                <div style="font-size: 0.75rem; color: ${errorRate > 0 ? '#dc3545' : '#28a745'};">
+                                    <i class="fas fa-${errorRate > 0 ? 'exclamation-triangle' : 'check-circle'}"></i>
+                                    ${dateData.errors} con errores (${errorRate}%)
+                                </div>
+                            </div>
+                        `;
+                    }).join('') : `
+                        <div style="text-align: center; padding: 2rem; color: #6c757d;">
+                            <i class="fas fa-calendar-times" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                            <div>No hay registros para mostrar</div>
+                        </div>
+                    `}
                 </div>
             </div>
             
