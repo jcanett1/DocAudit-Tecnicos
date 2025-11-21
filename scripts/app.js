@@ -15,6 +15,18 @@ class AuditApp {
         this.init();
     }
 
+    // Función auxiliar para obtener fecha en formato YYYY-MM-DD usando zona local
+    getLocalDateString(date = new Date()) {
+        return date.toLocaleDateString('en-CA'); // Formato YYYY-MM-DD en zona local
+    }
+
+    // Función auxiliar para obtener fecha de ayer en formato YYYY-MM-DD
+    getYesterdayDateString() {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        return this.getLocalDateString(yesterday);
+    }
+
     // Obtener configuración de forma segura
     getConfig() {
         const defaultConfig = {
@@ -71,7 +83,8 @@ class AuditApp {
     setupDateField() {
         const auditDateField = document.getElementById('audit_date');
         if (auditDateField) {
-            const today = new Date().toISOString().split('T')[0];
+            // Usar fecha local del usuario usando función auxiliar
+            const today = this.getLocalDateString();
             auditDateField.value = today;
         }
     }
@@ -539,7 +552,7 @@ class AuditApp {
         const statsByDate = audits.reduce((acc, audit) => {
             if (!audit.audit_date) return acc;
             
-            const date = new Date(audit.audit_date).toISOString().split('T')[0]; // Formato YYYY-MM-DD
+            const date = new Date(audit.audit_date).toLocaleDateString('en-CA'); // Formato YYYY-MM-DD en zona local
             if (!acc[date]) {
                 acc[date] = { total: 0, errors: 0 };
             }
@@ -554,9 +567,9 @@ class AuditApp {
         const sortedDates = Object.keys(statsByDate).sort().reverse(); // Más reciente primero
         const last7Days = sortedDates.slice(0, 7); // Últimos 7 días
         
-        // Calcular estadísticas por día
-        const today = new Date().toISOString().split('T')[0];
-        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+        // Calcular estadísticas por día usando fecha local
+        const today = this.getLocalDateString(); // Fecha local YYYY-MM-DD
+        const yesterday = this.getYesterdayDateString();
         
         const auditsToday = statsByDate[today]?.total || 0;
         const auditsWithErrorsToday = statsByDate[today]?.errors || 0;
@@ -573,9 +586,15 @@ class AuditApp {
 
         // Obtener período (rango de fechas)
         const dates = audits.map(audit => audit.audit_date).filter(date => date).sort();
-        const period = dates.length > 0 ? 
-            `${dates[0]} a ${dates[dates.length - 1]}` : 
-            'Sin datos de fecha';
+        let period = 'Sin datos de fecha';
+        if (dates.length > 0) {
+            if (dates.length === 1) {
+                period = `Solo: ${dates[0]}`;
+            } else {
+                // dates[0] es la fecha más antigua, dates[dates.length-1] es la más reciente
+                period = `${dates[0]} a ${dates[dates.length - 1]}`;
+            }
+        }
 
         container.innerHTML = `
             <div class="stats-grid">
@@ -755,7 +774,7 @@ class AuditApp {
             worksheet['!cols'] = columnWidths;
             
             // Generar nombre del archivo con fecha actual
-            let todayStr = new Date().toISOString().split('T')[0];
+            let todayStr = this.getLocalDateString(); // Usar función auxiliar para fecha local
             const filename = `Auditorias_Golf_${todayStr}.xlsx`;
             
             // Descargar archivo
@@ -881,7 +900,7 @@ class AuditApp {
             });
             
             // Generar nombre del archivo con fecha actual
-            let todayPdfStr = new Date().toISOString().split('T')[0];
+            let todayPdfStr = this.getLocalDateString(); // Usar función auxiliar para fecha local
             const filename = `Auditorias_Golf_${todayPdfStr}.pdf`;
             
             // Descargar archivo
