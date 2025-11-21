@@ -329,9 +329,22 @@ class AuditAPI {
 
     // Formatear datos para el formulario
     formatAuditForForm(audit) {
+        // CORRECCIÓN CRÍTICA: Formatear la fecha para que sea compatible con input type="date"
+        let formattedAuditDate = '';
+        if (audit.audit_date) {
+            // Si la fecha viene como string ISO o en otro formato, convertir a YYYY-MM-DD
+            const date = new Date(audit.audit_date);
+            if (!isNaN(date.getTime())) {
+                formattedAuditDate = date.toLocaleDateString('en-CA'); // Formato YYYY-MM-DD en zona local
+            } else {
+                // Si ya está en el formato correcto, usarla tal como está
+                formattedAuditDate = audit.audit_date;
+            }
+        }
+        
         return {
             checked_by: audit.checked_by || '',
-            audit_date: audit.audit_date || '',
+            audit_date: formattedAuditDate,
             build_cell: audit.build_cell || '',
             operadores: audit.operadores || '',
             order_number: audit.order_number || '',
@@ -365,7 +378,24 @@ class AuditAPI {
         
         // Campos básicos
         data.checked_by = formData.checked_by;
-        data.audit_date = formData.audit_date;
+        
+        // CORRECCIÓN CRÍTICA: Asegurar que la fecha se mantenga en formato YYYY-MM-DD local
+        // Si la fecha viene del formulario en formato YYYY-MM-DD, mantenerla así para evitar conversión de zona horaria
+        if (formData.audit_date) {
+            // Si ya está en formato YYYY-MM-DD (como viene del input type="date"), mantenerla
+            if (/^\d{4}-\d{2}-\d{2}$/.test(formData.audit_date)) {
+                data.audit_date = formData.audit_date;
+            } else {
+                // Si no está en el formato correcto, intentar parsearla y formatearla
+                const date = new Date(formData.audit_date);
+                if (!isNaN(date.getTime())) {
+                    data.audit_date = date.toLocaleDateString('en-CA'); // Formato YYYY-MM-DD en zona local
+                } else {
+                    data.audit_date = formData.audit_date;
+                }
+            }
+        }
+        
         data.build_cell = formData.build_cell;
         data.operadores = formData.operadores;
         data.order_number = formData.order_number;
