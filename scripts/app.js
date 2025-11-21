@@ -229,6 +229,16 @@ class AuditApp {
 
         noDataMessage.style.display = 'none';
         
+        console.log('renderTable - Debug de fechas:');
+        this.audits.forEach((audit, index) => {
+            console.log(`Registro ${index + 1}:`, {
+                id: audit.id,
+                audit_date_original: audit.audit_date,
+                tipo_dato: typeof audit.audit_date,
+                longitud: audit.audit_date ? audit.audit_date.length : 'undefined'
+            });
+        });
+        
         tbody.innerHTML = this.audits.map(audit => `
             <tr>
                 <td>${this.formatDate(audit.audit_date)}</td>
@@ -262,15 +272,34 @@ class AuditApp {
         if (!dateString) return '-';
         
         try {
-            // CORRECCIÓN CRÍTICA: No aplicar conversiones de zona horaria que causen fechas anteriores
             console.log('formatDate - Fecha original:', dateString);
             
-            // Si ya está en formato YYYY-MM-DD, extraer directamente los componentes
+            // CORRECCIÓN PARA ZONA HORARIA: Manejar fechas que vienen de Supabase
+            // Si ya está en formato YYYY-MM-DD, extraer directamente
             if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
                 const [year, month, day] = dateString.split('-');
-                const formatted = `${day}/${month}/${year}`;
-                console.log('formatDate - Fecha formateada:', formatted);
-                return formatted;
+                
+                // VERIFICACIÓN: Si la fecha parece estar desfasada por zona horaria
+                // y el usuario está en zona horaria negativa (GMT-), ajustar 1 día hacia atrás
+                const userTimezoneOffset = new Date().getTimezoneOffset(); // Minutos
+                const isNegativeTimezone = userTimezoneOffset < 0; // GMT-6 para México
+                
+                if (isNegativeTimezone) {
+                    // Para zona horaria negativa, ajustar 1 día hacia atrás
+                    const dateObj = new Date(year, month - 1, parseInt(day) - 1);
+                    const adjustedYear = dateObj.getFullYear();
+                    const adjustedMonth = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const adjustedDay = String(dateObj.getDate()).padStart(2, '0');
+                    
+                    const formatted = `${adjustedDay}/${adjustedMonth}/${adjustedYear}`;
+                    console.log(`formatDate - Zona horaria GMT-${userTimezoneOffset/60}, ajustado:`, formatted);
+                    return formatted;
+                } else {
+                    // Para zonas horarias positivas, mostrar tal como está
+                    const formatted = `${day}/${month}/${year}`;
+                    console.log('formatDate - Fecha original:', formatted);
+                    return formatted;
+                }
             }
             
             // Fallback para otros formatos
@@ -430,6 +459,8 @@ class AuditApp {
             
             // Debug: Mostrar datos finales antes de guardar
             console.log('handleFormSubmit - Datos finales a guardar:', formattedData);
+            console.log('handleFormSubmit - Hora actual del sistema:', new Date().toString());
+            console.log('handleFormSubmit - Timezone offset:', new Date().getTimezoneOffset(), 'minutos');
 
             // Guardar
             if (this.currentEditingId) {
@@ -441,6 +472,7 @@ class AuditApp {
             }
 
             // Recargar datos
+            console.log('handleFormSubmit - Recargando datos para verificar...');
             await this.loadAudits();
             
             // Cerrar modal
