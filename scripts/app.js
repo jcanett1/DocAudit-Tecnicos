@@ -475,49 +475,70 @@ class AuditApp {
     }
 
     // Manejar envío del formulario
-    async handleFormSubmit(e) {
-        e.preventDefault();
-        
-        try {
-            const form = e.target;
-            const data = this.extractFormData(form);
-            
-            // Validar datos
-            const validation = window.auditAPI.validateAuditData(data);
-            if (!validation.isValid) {
-                this.showNotification(`Errores de validación: ${validation.errors.join(', ')}`, 'error');
+async handleFormSubmit(e) {
+    e.preventDefault();
+    try {
+        const form = e.target;
+        const data = this.extractFormData(form);
+
+        // 🔒 VALIDACIÓN PERSONALIZADA: Si hay errores y palos con errores, se requiere al menos un tipo de error > 0
+        const errorsFound = data.errors_found === true || data.errors_found === 'true' || data.errors_found === 'on';
+        const gcWithErrors = parseInt(data.gc_with_errors) || 0;
+
+        if (errorsFound && gcWithErrors > 0) {
+            const errorFieldNames = Object.keys(this.config.ERROR_TYPES || {});
+            let hasAnyErrorValue = false;
+
+            for (const field of errorFieldNames) {
+                const errorValue = parseInt(data[`${field}_error`]) || 0;
+                if (errorValue > 0) {
+                    hasAnyErrorValue = true;
+                    break;
+                }
+            }
+
+            if (!hasAnyErrorValue) {
+                this.showNotification(
+                    '⚠️ Debes especificar al menos un tipo de error con valor mayor a 0 si reportaste palos con errores.',
+                    'error'
+                );
+                // Opcional: enfocar la sección de errores
+                const errorSection = document.getElementById('errorTypesSection');
+                if (errorSection && errorSection.style.display !== 'none') {
+                    errorSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
                 return;
             }
-
-            // Formatear datos para la API
-            const formattedData = window.auditAPI.formatFormData(data);
-            
-            // Debug: Mostrar datos finales antes de guardar
-            console.log('handleFormSubmit - Datos finales a guardar:', formattedData);
-            console.log('handleFormSubmit - Hora actual del sistema:', new Date().toString());
-            console.log('handleFormSubmit - Timezone offset:', new Date().getTimezoneOffset(), 'minutos');
-
-            // Guardar
-            if (this.currentEditingId) {
-                await window.auditAPI.updateAudit(this.currentEditingId, formattedData);
-                this.showNotification(this.config.UI.UPDATE_SUCCESS_MESSAGE, 'success');
-            } else {
-                await window.auditAPI.createAudit(formattedData);
-                this.showNotification(this.config.UI.SAVE_SUCCESS_MESSAGE, 'success');
-            }
-
-            // Recargar datos
-            console.log('handleFormSubmit - Recargando datos para verificar...');
-            await this.loadAudits();
-            
-            // Cerrar modal
-            this.closeModal(document.getElementById('auditModal'));
-
-        } catch (error) {
-            this.showNotification(`Error: ${error.message}`, 'error');
-            console.error('Error saving audit:', error);
         }
+
+        // Validar datos (validación general de la API)
+        const validation = window.auditAPI.validateAuditData(data);
+        if (!validation.isValid) {
+            this.showNotification(`Errores de validación: ${validation.errors.join(', ')}`, 'error');
+            return;
+        }
+
+        // Formatear datos para la API
+        const formattedData = window.auditAPI.formatFormData(data);
+
+        // Guardar
+        if (this.currentEditingId) {
+            await window.auditAPI.updateAudit(this.currentEditingId, formattedData);
+            this.showNotification(this.config.UI.UPDATE_SUCCESS_MESSAGE, 'success');
+        } else {
+            await window.auditAPI.createAudit(formattedData);
+            this.showNotification(this.config.UI.SAVE_SUCCESS_MESSAGE, 'success');
+        }
+
+        // Recargar datos
+        await this.loadAudits();
+        // Cerrar modal
+        this.closeModal(document.getElementById('auditModal'));
+    } catch (error) {
+        this.showNotification(`Error: ${error.message}`, 'error');
+        console.error('Error saving audit:', error);
     }
+}
 
     // Editar auditoría
     async editAudit(auditId) {
