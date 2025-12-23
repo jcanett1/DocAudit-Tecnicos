@@ -71,10 +71,8 @@ class AuditApp {
         return dateString;
     }
 
-    correctDateForTimezone(dateString) {
-    // ✅ Sin corrección automática.
-    // Solo validar y devolver la fecha tal como llegó.
-    // La corrección fue un fix temporal que ya no aplica.
+correctDateForTimezone(dateString) {
+    // ✅ Sin corrección automática. Devuelve la fecha tal como llegó.
     if (!dateString || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
         return dateString;
     }
