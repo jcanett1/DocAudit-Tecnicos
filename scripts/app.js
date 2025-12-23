@@ -51,25 +51,7 @@ class AuditApp {
         return localDate;
     }
 
-    // Función auxiliar para corregir fechas desfasadas por zona horaria
-    (dateString) {
-        if (!dateString || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-            return dateString;
-        }
-        
-        const [year, month, day] = dateString.split('-');
-        const dayNum = parseInt(day);
-        
-        // CORRECCIÓN PARA ZONA HORARIA: Si el día es 21,22,23, probablemente está desfasado
-        if (dayNum >= 21 && dayNum <= 23) {
-            const correctedDay = String(dayNum - 1).padStart(2, '0');
-            const correctedDate = `${year}-${month}-${correctedDay}`;
-            console.log(`Corrección de zona horaria: ${dateString} → ${correctedDate}`);
-            return correctedDate;
-        }
-        
-        return dateString;
-    }
+   
 
 correctDateForTimezone(dateString) {
     // ✅ Sin corrección automática. Devuelve la fecha tal como llegó.
