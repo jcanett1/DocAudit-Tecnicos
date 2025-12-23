@@ -61,16 +61,6 @@ correctDateForTimezone(dateString) {
     return dateString;
 }
         
-        // Si no, intentar parsearla y formatearla
-      //  const date = new Date(correctedDate);
-       //  if (!isNaN(date.getTime())) {
-            // Asegurar que sea fecha local, no UTC
-          //   const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-           //  return localDate.toLocaleDateString('en-CA');
-     //    }
-        
-   //    //   return correctedDate;
- //    }
 
     // Obtener configuración de forma segura
     getConfig() {
