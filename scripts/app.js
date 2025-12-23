@@ -52,7 +52,7 @@ class AuditApp {
     }
 
     // Función auxiliar para corregir fechas desfasadas por zona horaria
-    correctDateForTimezone(dateString) {
+    (dateString) {
         if (!dateString || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
             return dateString;
         }
@@ -71,17 +71,15 @@ class AuditApp {
         return dateString;
     }
 
-    // Función auxiliar para formatear fecha de forma segura
-    formatDateSafely(dateStr) {
-        if (!dateStr) return '';
-        
-        // Aplicar corrección de zona horaria
-        const correctedDate = this.correctDateForTimezone(dateStr);
-        
-        // Si ya está en formato YYYY-MM-DD, devolverlo tal como está
-        if (/^\d{4}-\d{2}-\d{2}$/.test(correctedDate)) {
-            return correctedDate;
-        }
+    correctDateForTimezone(dateString) {
+    // ✅ Sin corrección automática.
+    // Solo validar y devolver la fecha tal como llegó.
+    // La corrección fue un fix temporal que ya no aplica.
+    if (!dateString || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        return dateString;
+    }
+    return dateString;
+}
         
         // Si no, intentar parsearla y formatearla
         const date = new Date(correctedDate);
