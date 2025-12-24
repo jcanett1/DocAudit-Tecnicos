@@ -637,37 +637,31 @@ async handleFormSubmit(e) {
     }
 
 async getStats() {
-    // 📅 Inicio de hoy (00:00:00 local)
-    const startToday = new Date();
-    startToday.setHours(0, 0, 0, 0);
+    // Fecha local de hoy
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    // 📅 Inicio de hace 6 días
-    const startSevenDaysAgo = new Date(startToday);
-    startSevenDaysAgo.setDate(startSevenDaysAgo.getDate() - 6);
+    // Hace 6 días (7 días incluyendo hoy)
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 6);
 
-    // 📅 Fin de hoy (23:59:59.999)
-    const endToday = new Date();
-    endToday.setHours(23, 59, 59, 999);
+    const fromDate = sevenDaysAgo.toISOString().split('T')[0];
+    const toDate = today.toISOString().split('T')[0];
 
-    console.log(
-        'STATS RANGE:',
-        startSevenDaysAgo.toISOString(),
-        '→',
-        endToday.toISOString()
-    );
+    console.log('STATS QUERY:', fromDate, '→', toDate);
 
     const { data, error } = await supabase
-        .from('dotaudit')
+        .from('dotaudit')        // ✅ NOMBRE CORRECTO
         .select('*')
-        .gte('audit_date', startSevenDaysAgo.toISOString())
-        .lte('audit_date', endToday.toISOString());
+        .gte('audit_date', fromDate)
+        .lte('audit_date', toDate);
 
     if (error) {
-        console.error('Supabase stats error:', error);
+        console.error('Supabase error:', error);
         throw error;
     }
 
-    console.log('STATS DATA COUNT:', data.length);
+    console.log('STATS DATA:', data);
     return data;
 }
     
