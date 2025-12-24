@@ -636,6 +636,31 @@ async handleFormSubmit(e) {
         paginationContainer.innerHTML = paginationHTML;
     }
 
+async getStats() {
+    // 📅 Fecha local de hoy
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    // 📅 Hace 6 días (para incluir hoy = 7 días)
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 6);
+
+    const fromDate = sevenDaysAgo.toISOString().split('T')[0];
+    const toDate = today.toISOString().split('T')[0];
+
+    console.log('STATS RANGE:', fromDate, '→', toDate);
+
+    const { data, error } = await supabase
+        .from('audits')
+        .select('*')
+        .gte('audit_date', fromDate)
+        .lte('audit_date', toDate);
+
+    if (error) throw error;
+
+    return data;
+}
+    
     // Mostrar estadísticas
     async showStats() {
         try {
