@@ -657,7 +657,7 @@ async getStats() {
     );
 
     const { data, error } = await supabase
-        .from('doutaudit')
+        .from('dotaudit')
         .select('*')
         .gte('audit_date', startSevenDaysAgo.toISOString())
         .lte('audit_date', endToday.toISOString());
