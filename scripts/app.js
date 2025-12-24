@@ -651,10 +651,10 @@ async getStats() {
     console.log('STATS RANGE:', fromDate, '→', toDate);
 
     const { data, error } = await supabase
-        .from('audits')
-        .select('*')
-        .gte('audit_date', fromDate)
-        .lte('audit_date', toDate);
+    .from('doutaudit')
+    .select('*')
+    .gte('audit_date', fromDate)
+    .lte('audit_date', toDate);
 
     if (error) throw error;
 
