@@ -637,27 +637,37 @@ async handleFormSubmit(e) {
     }
 
 async getStats() {
-    // 📅 Fecha local de hoy
-    const today = new Date();
-    today.setHours(0,0,0,0);
+    // 📅 Inicio de hoy (00:00:00 local)
+    const startToday = new Date();
+    startToday.setHours(0, 0, 0, 0);
 
-    // 📅 Hace 6 días (para incluir hoy = 7 días)
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(today.getDate() - 6);
+    // 📅 Inicio de hace 6 días
+    const startSevenDaysAgo = new Date(startToday);
+    startSevenDaysAgo.setDate(startSevenDaysAgo.getDate() - 6);
 
-    const fromDate = sevenDaysAgo.toISOString().split('T')[0];
-    const toDate = today.toISOString().split('T')[0];
+    // 📅 Fin de hoy (23:59:59.999)
+    const endToday = new Date();
+    endToday.setHours(23, 59, 59, 999);
 
-    console.log('STATS RANGE:', fromDate, '→', toDate);
+    console.log(
+        'STATS RANGE:',
+        startSevenDaysAgo.toISOString(),
+        '→',
+        endToday.toISOString()
+    );
 
     const { data, error } = await supabase
-    .from('doutaudit')
-    .select('*')
-    .gte('audit_date', fromDate)
-    .lte('audit_date', toDate);
+        .from('doutaudit')
+        .select('*')
+        .gte('audit_date', startSevenDaysAgo.toISOString())
+        .lte('audit_date', endToday.toISOString());
 
-    if (error) throw error;
+    if (error) {
+        console.error('Supabase stats error:', error);
+        throw error;
+    }
 
+    console.log('STATS DATA COUNT:', data.length);
     return data;
 }
     
