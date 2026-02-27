@@ -152,6 +152,12 @@
                     <button id="loadStatsBtn" class="btn btn-primary">
                         <i class="fas fa-sync-alt"></i> Cargar Estadísticas
                     </button>
+                    <button id="downloadStatsPdfBtn" class="btn btn-pdf" disabled title="Carga las estadísticas primero">
+                        <i class="fas fa-file-pdf"></i> Descargar PDF
+                    </button>
+                    <button id="downloadDailyReportBtn" class="btn btn-daily" disabled title="Carga las estadísticas primero">
+                        <i class="fas fa-file-download"></i> Reporte Diario
+                    </button>
                 </div>
 
                 <!-- Loading de estadísticas -->
@@ -498,10 +504,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <!-- Chart.js para gráficas -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- html2canvas para captura de gráficas en PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="scripts/config.js"></script>
     <script src="scripts/config-fallback.js"></script>
     <script src="scripts/api.js"></script>
     <script src="scripts/app.js"></script>
     <script src="scripts/stats.js"></script>
+    <script src="scripts/reports.js"></script>
 </body>
 </html>

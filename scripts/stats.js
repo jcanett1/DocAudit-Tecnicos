@@ -114,6 +114,8 @@ class StatsModule {
 
             this.renderAll();
             this.showContent(true);
+            // Habilitar botones de descarga
+            if (window.reportsModule) window.reportsModule.enableButtons(true);
 
         } catch (err) {
             console.error('Error cargando estadísticas:', err);
