@@ -616,13 +616,32 @@ class StatsModule {
 
         const CELLS = ['5', '10', '11', '15', '16', 'kiteo', 'otras'];
         const byCell = {};
-        CELLS.forEach(c => { byCell[c] = { ok: 0, err: 0 }; });
+        CELLS.forEach(c => { 
+            byCell[c] = { ok: 0, err: 0, errorTypes: {} };
+            this.ERROR_FIELDS.forEach(field => {
+                byCell[c].errorTypes[field] = 0;
+            });
+        });
 
         this.data.forEach(a => {
-            const c = a.build_cell || 'otras';
-            if (!byCell[c]) byCell[c] = { ok: 0, err: 0 };
-            if (a.errors_found) byCell[c].err++;
-            else byCell[c].ok++;
+            const c = (a.build_cell || 'otras').toString();
+            if (!byCell[c]) {
+                byCell[c] = { ok: 0, err: 0, errorTypes: {} };
+                this.ERROR_FIELDS.forEach(field => {
+                    byCell[c].errorTypes[field] = 0;
+                });
+            }
+            if (a.errors_found) {
+                byCell[c].err++;
+                this.ERROR_FIELDS.forEach(field => {
+                    const errorValue = parseInt(a[field]) || 0;
+                    if (errorValue > 0) {
+                        byCell[c].errorTypes[field] += errorValue;
+                    }
+                });
+            } else {
+                byCell[c].ok++;
+            }
         });
 
         const activeCells = CELLS.filter(c => byCell[c].ok + byCell[c].err > 0);
@@ -667,7 +686,16 @@ class StatsModule {
                                 const cell = activeCells[ctx[0].dataIndex];
                                 const total = byCell[cell].ok + byCell[cell].err;
                                 const pct = total > 0 ? Math.round((byCell[cell].err / total) * 100) : 0;
-                                return [`Total: ${total}`, `% Error: ${pct}%`];
+                                const errorTypes = byCell[cell].errorTypes;
+                                const topErrors = Object.entries(errorTypes)
+                                    .filter(([_, value]) => value > 0)
+                                    .sort((a, b) => b[1] - a[1])
+                                    .slice(0, 3)
+                                    .map(([field, value]) => this.ERROR_LABELS[field] + ': ' + value)
+                                    .join(', ');
+                                const lines = ['Total: ' + total, '% Error: ' + pct + '%'];
+                                if (topErrors) lines.push('Top Errores: ' + topErrors);
+                                return lines;
                             }
                         }
                     }
@@ -773,7 +801,10 @@ class StatsModule {
         // ── 10. Tabla de estadísticas detalladas por celda ──────────────────────────────────
     renderCellDetailTable() {
         const container = document.getElementById('statsCellDetailTable');
-        if (!container) return;
+        if (!container || !this.data || this.data.length === 0) {
+            if (container) container.innerHTML = '<p class="no-data-inline">Sin datos para procesar.</p>';
+            return;
+        }
 
         const CELLS = ['5', '10', '11', '15', '16', 'kiteo', 'otras'];
         const cellStats = {};
@@ -787,7 +818,6 @@ class StatsModule {
                 totalErrores: 0,
                 errorTypes: {}
             };
-            // Inicializar contadores de tipos de error
             this.ERROR_FIELDS.forEach(field => {
                 cellStats[c].errorTypes[field] = 0;
             });
@@ -795,7 +825,7 @@ class StatsModule {
 
         // Procesar datos
         this.data.forEach(audit => {
-            const cell = audit.build_cell || 'otras';
+            const cell = (audit.build_cell || 'otras').toString();
             if (!cellStats[cell]) {
                 cellStats[cell] = {
                     totalIngresos: 0,
@@ -915,14 +945,12 @@ class StatsModule {
         this.ERROR_FIELDS.forEach(field => {
             const label = this.ERROR_LABELS[field];
             let rowTotal = 0;
-            let hasData = false;
 
             html += `<tr><td><strong>${label}</strong></td>`;
 
             activeCells.forEach(cell => {
                 const value = cellStats[cell].errorTypes[field];
                 rowTotal += value;
-                if (value > 0) hasData = true;
                 html += `<td class="text-center">${value > 0 ? value : '-'}</td>`;
             });
 
