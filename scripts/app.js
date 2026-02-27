@@ -134,7 +134,6 @@ correctDateForTimezone(dateString) {
     bindEvents() {
         // Botones del header
         document.getElementById('newAuditBtn')?.addEventListener('click', () => this.openModal());
-        document.getElementById('statsBtn')?.addEventListener('click', () => this.showStats());
 
         // Filtros
         document.getElementById('applyFilters')?.addEventListener('click', () => this.applyFilters());

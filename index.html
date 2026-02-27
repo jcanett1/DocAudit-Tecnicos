@@ -15,9 +15,6 @@
             <div class="header-content">
                 <h1><i class="fas fa-golf-ball"></i> Sistema de DocAudit-Tecnicos</h1>
                 <div class="header-actions">
-                    <button id="statsBtn" class="btn btn-secondary">
-                        <i class="fas fa-chart-bar"></i> Estadísticas
-                    </button>
                     <button id="newAuditBtn" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Nueva Auditoría
                     </button>
@@ -25,95 +22,238 @@
             </div>
         </header>
 
+        <!-- Navegación de Pestañas -->
+        <nav class="tabs-nav">
+            <div class="tabs-container">
+                <button class="tab-btn active" data-tab="audits">
+                    <i class="fas fa-clipboard-list"></i> Auditorías
+                </button>
+                <button class="tab-btn" data-tab="stats">
+                    <i class="fas fa-chart-bar"></i> Estadísticas
+                </button>
+            </div>
+        </nav>
+
         <!-- Main Content -->
         <main class="main">
-            <!-- Filtros -->
-            <div class="filters-section">
-                <div class="filters-container">
-                    <div class="filter-group">
-                        <label for="filterAuditor">Filtrar por Auditor:</label>
-                        <select id="filterAuditor">
-                            <option value="">Todos los auditores</option>
+
+            <!-- ===== PESTAÑA: AUDITORÍAS ===== -->
+            <div id="tab-audits" class="tab-content active">
+                <!-- Filtros -->
+                <div class="filters-section">
+                    <div class="filters-container">
+                        <div class="filter-group">
+                            <label for="filterAuditor">Filtrar por Auditor:</label>
+                            <select id="filterAuditor">
+                                <option value="">Todos los auditores</option>
+                                <option value="Karla">Karla</option>
+                                <option value="Adrián">Adrián</option>
+                                <option value="Carmen">Carmen</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="filterCell">Filtrar por Celda:</label>
+                            <select id="filterCell">
+                                <option value="">Todas las celdas</option>
+                                <option value="5">5</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="15">15</option>
+                                <option value="16">16</option>
+                                <option value="kiteo">Kiteo</option>
+                                <option value="otras">Otras</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="filterDate">Fecha Desde:</label>
+                            <input type="date" id="filterDate">
+                        </div>
+                        
+                        <div class="filter-actions">
+                            <button id="applyFilters" class="btn btn-primary">
+                                <i class="fas fa-filter"></i> Aplicar
+                            </button>
+                            <button id="clearFilters" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Limpiar
+                            </button>
+                            <button id="exportExcelBtn" class="btn btn-success">
+                                <i class="fas fa-file-excel"></i> Exportar a Excel
+                            </button>
+                            <button id="exportPdfBtn" class="btn btn-danger">
+                                <i class="fas fa-file-pdf"></i> Exportar a PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de Auditorías -->
+                <div class="table-section">
+                    <div class="table-container">
+                        <table id="auditsTable">
+                            <thead>
+                                <tr>
+                                    <th>Fecha Auditoría</th>
+                                    <th>Auditor</th>
+                                    <th>Celda</th>
+                                    <th>Orden</th>
+                                    <th>SH</th>
+                                    <th>QTY GC</th>
+                                    <th>Errores</th>
+                                    <th>GC con Errores</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditsTableBody">
+                                <!-- Los datos se cargarán dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="loadingSpinner" class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Cargando auditorías...</p>
+                    </div>
+                    
+                    <div id="noDataMessage" class="no-data-message" style="display: none;">
+                        <i class="fas fa-inbox"></i>
+                        <p>No se encontraron auditorías</p>
+                    </div>
+                    
+                    <!-- Controles de paginación -->
+                    <div id="paginationContainer" class="pagination-container">
+                        <!-- Los controles se generarán dinámicamente -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== PESTAÑA: ESTADÍSTICAS ===== -->
+            <div id="tab-stats" class="tab-content">
+                <!-- Filtros de estadísticas -->
+                <div class="stats-filters-bar">
+                    <div class="stats-filter-group">
+                        <label for="statsFilterFrom"><i class="fas fa-calendar-alt"></i> Desde:</label>
+                        <input type="date" id="statsFilterFrom">
+                    </div>
+                    <div class="stats-filter-group">
+                        <label for="statsFilterTo"><i class="fas fa-calendar-alt"></i> Hasta:</label>
+                        <input type="date" id="statsFilterTo">
+                    </div>
+                    <div class="stats-filter-group">
+                        <label for="statsFilterAuditor"><i class="fas fa-user"></i> Auditor:</label>
+                        <select id="statsFilterAuditor">
+                            <option value="">Todos</option>
                             <option value="Karla">Karla</option>
                             <option value="Adrián">Adrián</option>
                             <option value="Carmen">Carmen</option>
                         </select>
                     </div>
-                    
-                    <div class="filter-group">
-                        <label for="filterCell">Filtrar por Celda:</label>
-                        <select id="filterCell">
-                            <option value="">Todas las celdas</option>
-                            <option value="5">5</option>
-                            <option value="10">10</option>
-                            <option value="11">11</option>
-                            <option value="15">15</option>
-                            <option value="16">16</option>
-                            <option value="kiteo">Kiteo</option>
-                            <option value="otras">Otras</option>
-                        </select>
+                    <button id="loadStatsBtn" class="btn btn-primary">
+                        <i class="fas fa-sync-alt"></i> Cargar Estadísticas
+                    </button>
+                </div>
+
+                <!-- Loading de estadísticas -->
+                <div id="statsLoadingSpinner" class="loading-spinner" style="display:none;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Cargando estadísticas...</p>
+                </div>
+
+                <!-- Contenido de estadísticas -->
+                <div id="statsContent" style="display:none;">
+
+                    <!-- 1. Resumen general -->
+                    <div class="stats-section">
+                        <h2 class="stats-section-title"><i class="fas fa-tachometer-alt"></i> Resumen General</h2>
+                        <div id="statsSummaryCards" class="stats-grid"></div>
                     </div>
-                    
-                    <div class="filter-group">
-                        <label for="filterDate">Fecha Desde:</label>
-                        <input type="date" id="filterDate">
+
+                    <!-- 2. Registro total diario por fecha -->
+                    <div class="stats-section">
+                        <h2 class="stats-section-title"><i class="fas fa-calendar-day"></i> Registro Total Diario por Fecha</h2>
+                        <div id="statsDailyTable" class="stats-table-wrapper"></div>
                     </div>
-                    
-                    <div class="filter-actions">
-                        <button id="applyFilters" class="btn btn-primary">
-                            <i class="fas fa-filter"></i> Aplicar
-                        </button>
-                        <button id="clearFilters" class="btn btn-secondary">
-                            <i class="fas fa-times"></i> Limpiar
-                        </button>
-                        <button id="exportExcelBtn" class="btn btn-success">
-                            <i class="fas fa-file-excel"></i> Exportar a Excel
-                        </button>
-                        <button id="exportPdfBtn" class="btn btn-danger">
-                            <i class="fas fa-file-pdf"></i> Exportar a PDF
-                        </button>
+
+                    <!-- 3. Órdenes repetidas -->
+                    <div class="stats-section">
+                        <h2 class="stats-section-title"><i class="fas fa-copy"></i> Órdenes Repetidas</h2>
+                        <div id="statsRepeatedOrders"></div>
                     </div>
+
+                    <!-- 4. Clasificación de errores por orden -->
+                    <div class="stats-section">
+                        <h2 class="stats-section-title"><i class="fas fa-exclamation-circle"></i> Clasificación de Errores por Orden</h2>
+                        <div class="error-classification-grid">
+                            <!-- 1-2 errores -->
+                            <div class="error-class-card error-low">
+                                <div class="error-class-header">
+                                    <i class="fas fa-info-circle"></i>
+                                    <h3>1 a 2 Errores</h3>
+                                    <span id="count-low" class="error-count-badge">0</span>
+                                </div>
+                                <div id="list-low" class="error-order-list"></div>
+                            </div>
+                            <!-- 2-5 errores -->
+                            <div class="error-class-card error-medium">
+                                <div class="error-class-header">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <h3>2 a 5 Errores</h3>
+                                    <span id="count-medium" class="error-count-badge">0</span>
+                                </div>
+                                <div id="list-medium" class="error-order-list"></div>
+                            </div>
+                            <!-- más de 5 errores -->
+                            <div class="error-class-card error-high">
+                                <div class="error-class-header">
+                                    <i class="fas fa-times-circle"></i>
+                                    <h3>Más de 5 Errores</h3>
+                                    <span id="count-high" class="error-count-badge">0</span>
+                                </div>
+                                <div id="list-high" class="error-order-list"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Gráficas principales -->
+                    <div class="stats-section">
+                        <h2 class="stats-section-title"><i class="fas fa-chart-pie"></i> Gráficas de Auditorías</h2>
+                        <div class="charts-row">
+                            <div class="chart-card">
+                                <h3 class="chart-title"><i class="fas fa-chart-pie"></i> Distribución de Errores</h3>
+                                <canvas id="chartPie" width="350" height="350"></canvas>
+                            </div>
+                            <div class="chart-card">
+                                <h3 class="chart-title"><i class="fas fa-chart-bar"></i> Registros por Día</h3>
+                                <canvas id="chartBar" width="500" height="350"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6. Gráfica por celda -->
+                    <div class="stats-section">
+                        <h2 class="stats-section-title"><i class="fas fa-th"></i> Ingresos por Celda (con y sin errores)</h2>
+                        <div class="chart-card chart-full">
+                            <canvas id="chartCell" width="700" height="350"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- 7. Estadísticas por usuario -->
+                    <div class="stats-section">
+                        <h2 class="stats-section-title"><i class="fas fa-users"></i> Estadísticas por Usuario</h2>
+                        <p class="stats-section-subtitle">Ingresos diarios registrados por cada auditor, con y sin errores</p>
+                        <div id="statsUserTable" class="stats-table-wrapper"></div>
+                    </div>
+
+                </div>
+
+                <!-- Sin datos -->
+                <div id="statsNoData" class="no-data-message" style="display:none;">
+                    <i class="fas fa-chart-bar"></i>
+                    <p>Selecciona un rango de fechas y haz clic en "Cargar Estadísticas"</p>
                 </div>
             </div>
 
-            <!-- Tabla de Auditorías -->
-            <div class="table-section">
-                <div class="table-container">
-                    <table id="auditsTable">
-                        <thead>
-                            <tr>
-                                <th>Fecha Auditoría</th>
-                                <th>Auditor</th>
-                                <th>Celda</th>
-                                <th>Orden</th>
-                                <th>SH</th>
-                                <th>QTY GC</th>
-                                <th>Errores</th>
-                                <th>GC con Errores</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="auditsTableBody">
-                            <!-- Los datos se cargarán dinámicamente -->
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div id="loadingSpinner" class="loading-spinner">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <p>Cargando auditorías...</p>
-                </div>
-                
-                <div id="noDataMessage" class="no-data-message" style="display: none;">
-                    <i class="fas fa-inbox"></i>
-                    <p>No se encontraron auditorías</p>
-                </div>
-                
-                <!-- Controles de paginación -->
-                <div id="paginationContainer" class="pagination-container">
-                    <!-- Los controles se generarán dinámicamente -->
-                </div>
-            </div>
         </main>
     </div>
 
@@ -313,22 +453,6 @@
         </div>
     </div>
 
-    <!-- Modal de Estadísticas -->
-    <div id="statsModal" class="modal">
-        <div class="modal-content stats-modal">
-            <div class="modal-header">
-                <h2>Estadísticas de Auditorías</h2>
-                <button class="modal-close">&times;</button>
-            </div>
-            
-            <div class="stats-content">
-                <div id="statsData">
-                    <!-- Las estadísticas se cargarán dinámicamente -->
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Notificaciones -->
     <div id="notification" class="notification">
         <div class="notification-content">
@@ -341,9 +465,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <!-- Chart.js para gráficas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="scripts/config.js"></script>
     <script src="scripts/config-fallback.js"></script>
     <script src="scripts/api.js"></script>
     <script src="scripts/app.js"></script>
+    <script src="scripts/stats.js"></script>
 </body>
 </html>
