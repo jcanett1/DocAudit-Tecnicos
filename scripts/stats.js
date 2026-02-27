@@ -131,10 +131,11 @@ class StatsModule {
         this.renderDailyTable();
         this.renderRepeatedOrders();
         this.renderErrorClassification();
-        this.renderTopErrorTypes();   // ← NUEVA SECCIÓN
+        this.renderTopErrorTypes();
         this.renderPieChart();
         this.renderBarChart();
         this.renderCellChart();
+        this.renderCellDetailTable();  // ← SECCIÓN DE ESTADÍSTICAS POR CELDA
         this.renderUserTable();
     }
 
@@ -368,13 +369,12 @@ class StatsModule {
         listEl.innerHTML = html;
     }
 
-    // ── 5. Tipos de errores más frecuentes (NUEVA) ───────────
+    // ── 5. Tipos de errores más frecuentes ───────────────────
     renderTopErrorTypes() {
         const tableContainer = document.getElementById('statsTopErrorTypesTable');
         const chartCanvas    = document.getElementById('chartTopErrors');
         if (!tableContainer || !chartCanvas) return;
 
-        // Solo registros con errores encontrados
         const withErrors = this.data.filter(a => a.errors_found);
 
         if (withErrors.length === 0) {
@@ -383,26 +383,23 @@ class StatsModule {
             return;
         }
 
-        // Sumar el valor de cada tipo de error en todos los registros con errores
         const totals = {};
         this.ERROR_FIELDS.forEach(field => {
             totals[field] = withErrors.reduce((sum, a) => sum + (parseInt(a[field]) || 0), 0);
         });
 
-        // Contar en cuántos registros aparece cada tipo (valor > 0)
         const occurrences = {};
         this.ERROR_FIELDS.forEach(field => {
             occurrences[field] = withErrors.filter(a => (parseInt(a[field]) || 0) > 0).length;
         });
 
-        // Ordenar por total acumulado descendente
         const sorted = this.ERROR_FIELDS
             .map(field => ({
                 field,
-                label:      this.ERROR_LABELS[field],
-                total:      totals[field],
-                count:      occurrences[field],
-                pct:        withErrors.length > 0 ? Math.round((occurrences[field] / withErrors.length) * 100) : 0
+                label:  this.ERROR_LABELS[field],
+                total:  totals[field],
+                count:  occurrences[field],
+                pct:    withErrors.length > 0 ? Math.round((occurrences[field] / withErrors.length) * 100) : 0
             }))
             .filter(e => e.total > 0)
             .sort((a, b) => b.total - a.total);
@@ -413,7 +410,6 @@ class StatsModule {
             return;
         }
 
-        // ── Tabla ────────────────────────────────────────────
         const maxTotal = sorted[0].total;
         let html = `
             <table class="stats-table">
@@ -431,7 +427,7 @@ class StatsModule {
         `;
 
         sorted.forEach((e, i) => {
-            const barWidth = maxTotal > 0 ? Math.round((e.total / maxTotal) * 100) : 0;
+            const barWidth  = maxTotal > 0 ? Math.round((e.total / maxTotal) * 100) : 0;
             const rankClass = i === 0 ? 'rank-gold' : i === 1 ? 'rank-silver' : i === 2 ? 'rank-bronze' : '';
             const pctClass  = e.pct === 0 ? 'pct-ok' : e.pct <= 30 ? 'pct-warn' : 'pct-bad';
             html += `
@@ -455,18 +451,14 @@ class StatsModule {
         html += '</tbody></table>';
         tableContainer.innerHTML = html;
 
-        // ── Gráfica de barras horizontales ───────────────────
         if (this.charts.topErrors) { this.charts.topErrors.destroy(); delete this.charts.topErrors; }
 
-        // Mostrar máximo los 10 primeros para no saturar la gráfica
         const top10 = sorted.slice(0, 10);
-        const colors = top10.map((_, i) => {
-            const palette = [
-                '#dc3545','#fd7e14','#ffc107','#28a745','#17a2b8',
-                '#667eea','#6f42c1','#e83e8c','#20c997','#6c757d'
-            ];
-            return palette[i] || '#667eea';
-        });
+        const palette = [
+            '#dc3545','#fd7e14','#ffc107','#28a745','#17a2b8',
+            '#667eea','#6f42c1','#e83e8c','#20c997','#6c757d'
+        ];
+        const colors = top10.map((_, i) => palette[i] || '#667eea');
 
         this.charts.topErrors = new Chart(chartCanvas, {
             type: 'bar',
@@ -615,13 +607,13 @@ class StatsModule {
 
         const CELLS = ['5', '10', '11', '15', '16', 'kiteo', 'otras'];
         const byCell = {};
-        CELLS.forEach(c => { 
+        CELLS.forEach(c => {
             byCell[c] = { ok: 0, err: 0, errorTypes: {} };
             this.ERROR_FIELDS.forEach(f => byCell[c].errorTypes[f] = 0);
         });
 
         this.data.forEach(a => {
-            const c = a.build_cell || 'otras';
+            const c = (a.build_cell || 'otras').toString();
             if (!byCell[c]) {
                 byCell[c] = { ok: 0, err: 0, errorTypes: {} };
                 this.ERROR_FIELDS.forEach(f => byCell[c].errorTypes[f] = 0);
@@ -696,7 +688,141 @@ class StatsModule {
         });
     }
 
-    // ── 9. Tabla por usuario ─────────────────────────────────
+    // ── 9. Tabla de estadísticas detalladas por celda ────────
+    renderCellDetailTable() {
+        const container = document.getElementById('statsCellDetailTable');
+        if (!container || !this.data || this.data.length === 0) {
+            if (container) container.innerHTML = '<p class="no-data-inline">Sin datos para procesar.</p>';
+            return;
+        }
+
+        const CELLS = ['5', '10', '11', '15', '16', 'kiteo', 'otras'];
+        const cellStats = {};
+
+        CELLS.forEach(c => {
+            cellStats[c] = { totalIngresos: 0, ingresosConError: 0, ingresosSinError: 0, totalErrores: 0, errorTypes: {} };
+            this.ERROR_FIELDS.forEach(f => cellStats[c].errorTypes[f] = 0);
+        });
+
+        this.data.forEach(audit => {
+            const cell = (audit.build_cell || 'otras').toString();
+            if (!cellStats[cell]) {
+                cellStats[cell] = { totalIngresos: 0, ingresosConError: 0, ingresosSinError: 0, totalErrores: 0, errorTypes: {} };
+                this.ERROR_FIELDS.forEach(f => cellStats[cell].errorTypes[f] = 0);
+            }
+            cellStats[cell].totalIngresos++;
+            if (audit.errors_found) {
+                cellStats[cell].ingresosConError++;
+            } else {
+                cellStats[cell].ingresosSinError++;
+            }
+            this.ERROR_FIELDS.forEach(f => {
+                const val = parseInt(audit[f]) || 0;
+                cellStats[cell].errorTypes[f] += val;
+                cellStats[cell].totalErrores  += val;
+            });
+        });
+
+        const activeCells = CELLS.filter(c => cellStats[c].totalIngresos > 0);
+        if (activeCells.length === 0) {
+            container.innerHTML = '<p class="no-data-inline">Sin datos para el período seleccionado.</p>';
+            return;
+        }
+
+        let totalAll = 0, totalErrorsAll = 0, totalWithErrorsAll = 0;
+
+        let html = `
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>Celda</th>
+                        <th>Total Ingresos</th>
+                        <th>Ingresos Sin Error</th>
+                        <th>Ingresos Con Error</th>
+                        <th>% Con Error</th>
+                        <th>Total Errores</th>
+                        <th>Errores Promedio</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        activeCells.forEach(cell => {
+            const s   = cellStats[cell];
+            const pct = s.totalIngresos > 0 ? Math.round((s.ingresosConError / s.totalIngresos) * 100) : 0;
+            const avg = s.ingresosConError > 0 ? (s.totalErrores / s.ingresosConError).toFixed(2) : '0.00';
+            const pctClass = pct === 0 ? 'pct-ok' : pct <= 30 ? 'pct-warn' : 'pct-bad';
+
+            totalAll           += s.totalIngresos;
+            totalErrorsAll     += s.totalErrores;
+            totalWithErrorsAll += s.ingresosConError;
+
+            html += `
+                <tr>
+                    <td><strong>Celda ${cell}</strong></td>
+                    <td class="text-center"><strong>${s.totalIngresos}</strong></td>
+                    <td class="text-center text-green">${s.ingresosSinError}</td>
+                    <td class="text-center text-red">${s.ingresosConError}</td>
+                    <td class="text-center"><span class="pct-badge ${pctClass}">${pct}%</span></td>
+                    <td class="text-center"><strong>${s.totalErrores}</strong></td>
+                    <td class="text-center">${avg}</td>
+                </tr>
+            `;
+        });
+
+        const totalPct      = totalAll > 0 ? Math.round((totalWithErrorsAll / totalAll) * 100) : 0;
+        const totalAvg      = totalWithErrorsAll > 0 ? (totalErrorsAll / totalWithErrorsAll).toFixed(2) : '0.00';
+        const totalPctClass = totalPct === 0 ? 'pct-ok' : totalPct <= 30 ? 'pct-warn' : 'pct-bad';
+
+        html += `
+            <tr class="totals-row">
+                <td><strong>TOTAL</strong></td>
+                <td class="text-center"><strong>${totalAll}</strong></td>
+                <td class="text-center text-green"><strong>${totalAll - totalWithErrorsAll}</strong></td>
+                <td class="text-center text-red"><strong>${totalWithErrorsAll}</strong></td>
+                <td class="text-center"><span class="pct-badge ${totalPctClass}">${totalPct}%</span></td>
+                <td class="text-center"><strong>${totalErrorsAll}</strong></td>
+                <td class="text-center"><strong>${totalAvg}</strong></td>
+            </tr>
+        </tbody></table>
+
+        <div style="margin-top:30px;">
+            <h3 style="margin-bottom:15px; color:#333;">
+                <i class="fas fa-bug"></i> Desglose de Tipos de Errores por Celda
+            </h3>
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>Tipo de Error</th>
+                        ${activeCells.map(c => `<th class="text-center">Celda ${c}</th>`).join('')}
+                        <th class="text-center">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        this.ERROR_FIELDS.forEach(field => {
+            let rowTotal = 0;
+            const cells = activeCells.map(cell => {
+                const val = cellStats[cell].errorTypes[field];
+                rowTotal += val;
+                return `<td class="text-center">${val > 0 ? val : '-'}</td>`;
+            }).join('');
+
+            html += `
+                <tr>
+                    <td><strong>${this.ERROR_LABELS[field]}</strong></td>
+                    ${cells}
+                    <td class="text-center"><strong>${rowTotal > 0 ? rowTotal : '-'}</strong></td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+    }
+
+    // ── 10. Tabla por usuario ─────────────────────────────────
     renderUserTable() {
         const container = document.getElementById('statsUserTable');
         if (!container) return;
@@ -752,9 +878,9 @@ class StatsModule {
 
         let lastUser = null;
         rows.forEach(r => {
-            const total = r.ok + r.err;
-            const pct   = total > 0 ? Math.round((r.err / total) * 100) : 0;
-            const pctClass  = pct === 0 ? 'pct-ok' : pct <= 30 ? 'pct-warn' : 'pct-bad';
+            const total    = r.ok + r.err;
+            const pct      = total > 0 ? Math.round((r.err / total) * 100) : 0;
+            const pctClass = pct === 0 ? 'pct-ok' : pct <= 30 ? 'pct-warn' : 'pct-bad';
             const isNewUser = r.user !== lastUser;
             lastUser = r.user;
 
@@ -772,9 +898,10 @@ class StatsModule {
         });
 
         html += '<tr class="totals-separator"><td colspan="7"></td></tr>';
+
         Object.entries(userTotals).forEach(([user, t]) => {
-            const total = t.ok + t.err;
-            const pct   = total > 0 ? Math.round((t.err / total) * 100) : 0;
+            const total    = t.ok + t.err;
+            const pct      = total > 0 ? Math.round((t.err / total) * 100) : 0;
             const pctClass = pct === 0 ? 'pct-ok' : pct <= 30 ? 'pct-warn' : 'pct-bad';
             html += `
                 <tr class="totals-row">
