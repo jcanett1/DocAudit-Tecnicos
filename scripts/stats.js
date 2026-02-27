@@ -798,7 +798,9 @@ class StatsModule {
 
         html += '</tbody></table>';
         container.innerHTML = html;
-        // ── 10. Tabla de estadísticas detalladas por celda ──────────────────────────────────
+    }
+
+    // ── 10. Tabla de estadísticas detalladas por celda ──────────────────────────────────
     renderCellDetailTable() {
         const container = document.getElementById('statsCellDetailTable');
         if (!container || !this.data || this.data.length === 0) {
