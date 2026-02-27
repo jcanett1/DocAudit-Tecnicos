@@ -270,6 +270,9 @@ correctDateForTimezone(dateString) {
                 <td>${audit.gc_with_errors || 0}</td>
                 <td>
                     <div class="action-buttons">
+                        <button class="action-btn btn-view" onclick="auditApp.viewAudit('${audit.id}')" title="Ver detalle">
+                            <i class="fas fa-eye"></i>
+                        </button>
                         <button class="action-btn btn-edit" onclick="auditApp.editAudit('${audit.id}')" title="Editar">
                             <i class="fas fa-edit"></i>
                         </button>
@@ -506,6 +509,192 @@ async handleFormSubmit(e) {
         console.error('Error saving audit:', error);
     }
 }
+
+    // Ver detalle de auditoría
+    async viewAudit(auditId) {
+        try {
+            const audit = await window.auditAPI.getAudit(auditId);
+            if (!audit) {
+                this.showNotification('No se encontró la auditoría', 'error');
+                return;
+            }
+            this.renderViewModal(audit);
+            const modal = document.getElementById('viewAuditModal');
+            if (modal) {
+                modal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+        } catch (error) {
+            this.showNotification(`Error al cargar detalle: ${error.message}`, 'error');
+            console.error('Error viewing audit:', error);
+        }
+    }
+
+    // Renderizar contenido del modal de vista
+    renderViewModal(audit) {
+        const container = document.getElementById('viewAuditContent');
+        const titleEl   = document.getElementById('viewModalTitle');
+        if (!container) return;
+
+        const hasErrors = audit.errors_found;
+        const orderLabel = audit.order_number || '(sin número)';
+
+        if (titleEl) {
+            titleEl.textContent = `Orden: ${orderLabel}`;
+        }
+
+        // Calcular total de errores por tipo
+        const errorFields = [
+            { key: 'components_error',          label: 'Components' },
+            { key: 'tipping_error',             label: 'Tipping' },
+            { key: 'hosel_setting_error',        label: 'Hosel Setting' },
+            { key: 'shaft_stepping_error',       label: 'Shaft Stepping' },
+            { key: 'wood_putter_weights_error',  label: 'Wood/Putter Weights' },
+            { key: 'club_length_error',          label: 'Club Length' },
+            { key: 'shaft_alignment_error',      label: 'Shaft Alignment' },
+            { key: 'ferrules_error',             label: 'Ferrules' },
+            { key: 'loft_error',                 label: 'Loft' },
+            { key: 'lie_error',                  label: 'Lie' },
+            { key: 'grip_alignment_error',       label: 'Grip Alignment' },
+            { key: 'grip_length_error',          label: 'Grip Length' },
+            { key: 'wraps_error',                label: 'Wraps' },
+            { key: 'swing_weight_error',         label: 'Swing Weight' },
+            { key: 'cleanliness_error',          label: 'Cleanliness' },
+            { key: 'boxing_error',               label: 'Boxing' }
+        ];
+
+        const activeErrors = errorFields
+            .map(f => ({ label: f.label, value: parseInt(audit[f.key]) || 0 }))
+            .filter(f => f.value > 0)
+            .sort((a, b) => b.value - a.value);
+
+        const totalErrorSum = activeErrors.reduce((s, f) => s + f.value, 0);
+
+        // ── Sección de información general ──
+        let html = `
+            <div class="view-status-banner ${hasErrors ? 'view-status-error' : 'view-status-ok'}">
+                <i class="fas fa-${hasErrors ? 'exclamation-triangle' : 'check-circle'}"></i>
+                <span>${hasErrors ? 'Esta orden tiene errores registrados' : 'Esta orden no tiene errores registrados'}</span>
+            </div>
+
+            <div class="view-info-grid">
+                <div class="view-info-section">
+                    <h3 class="view-section-title"><i class="fas fa-info-circle"></i> Información General</h3>
+                    <div class="view-field-list">
+                        <div class="view-field">
+                            <span class="view-field-label">Fecha de Auditoría</span>
+                            <span class="view-field-value">${this.formatDate(audit.audit_date)}</span>
+                        </div>
+                        <div class="view-field">
+                            <span class="view-field-label">Auditor (Checked by)</span>
+                            <span class="view-field-value">${audit.checked_by || '-'}</span>
+                        </div>
+                        <div class="view-field">
+                            <span class="view-field-label">Celda (Build Cell)</span>
+                            <span class="view-field-value">${audit.build_cell || '-'}</span>
+                        </div>
+                        <div class="view-field">
+                            <span class="view-field-label">Operadores</span>
+                            <span class="view-field-value">${audit.operadores || '-'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="view-info-section">
+                    <h3 class="view-section-title"><i class="fas fa-shopping-cart"></i> Datos de la Orden</h3>
+                    <div class="view-field-list">
+                        <div class="view-field">
+                            <span class="view-field-label">Número de Orden</span>
+                            <span class="view-field-value">${audit.order_number || '-'}</span>
+                        </div>
+                        <div class="view-field">
+                            <span class="view-field-label">SH</span>
+                            <span class="view-field-value">${audit.sh || '-'}</span>
+                        </div>
+                        <div class="view-field">
+                            <span class="view-field-label">QTY of GC in Order</span>
+                            <span class="view-field-value">${audit.qty_of_gc_in_order ?? '-'}</span>
+                        </div>
+                        <div class="view-field">
+                            <span class="view-field-label">¿Errores Encontrados?</span>
+                            <span class="view-field-value">
+                                <span class="badge ${hasErrors ? 'badge-danger' : 'badge-success'}">
+                                    ${hasErrors ? 'Sí' : 'No'}
+                                </span>
+                            </span>
+                        </div>
+                        ${hasErrors ? `
+                        <div class="view-field">
+                            <span class="view-field-label">GC con Errores</span>
+                            <span class="view-field-value view-highlight-red">${audit.gc_with_errors ?? 0}</span>
+                        </div>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // ── Sección de errores (solo si hay) ──
+        if (hasErrors && activeErrors.length > 0) {
+            const maxVal = activeErrors[0].value;
+            html += `
+                <div class="view-errors-section">
+                    <h3 class="view-section-title view-section-title-red">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Tipos de Errores Registrados
+                        <span class="view-total-badge">Total acumulado: ${totalErrorSum}</span>
+                    </h3>
+                    <div class="view-error-grid">
+            `;
+
+            activeErrors.forEach(f => {
+                const barWidth = maxVal > 0 ? Math.round((f.value / maxVal) * 100) : 0;
+                const severity = f.value >= 10 ? 'sev-high' : f.value >= 5 ? 'sev-med' : 'sev-low';
+                html += `
+                    <div class="view-error-item ${severity}">
+                        <div class="view-error-top">
+                            <span class="view-error-label">${f.label}</span>
+                            <span class="view-error-value">${f.value}</span>
+                        </div>
+                        <div class="view-error-bar-track">
+                            <div class="view-error-bar-fill" style="width:${barWidth}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div></div>`;
+        } else if (hasErrors && activeErrors.length === 0) {
+            html += `
+                <div class="view-errors-section">
+                    <h3 class="view-section-title view-section-title-red">
+                        <i class="fas fa-exclamation-triangle"></i> Errores Registrados
+                    </h3>
+                    <p class="no-data-inline">Se marcó con errores pero no se especificaron tipos de error.</p>
+                </div>
+            `;
+        }
+
+        // ── Notas ──
+        if (audit.notes) {
+            html += `
+                <div class="view-notes-section">
+                    <h3 class="view-section-title"><i class="fas fa-sticky-note"></i> Notas</h3>
+                    <p class="view-notes-text">${audit.notes}</p>
+                </div>
+            `;
+        }
+
+        // ── Metadatos ──
+        html += `
+            <div class="view-meta">
+                <span><i class="fas fa-fingerprint"></i> ID: ${audit.id}</span>
+                ${audit.created_at ? `<span><i class="fas fa-clock"></i> Creado: ${new Date(audit.created_at).toLocaleString('es-MX')}</span>` : ''}
+                ${audit.updated_at ? `<span><i class="fas fa-edit"></i> Actualizado: ${new Date(audit.updated_at).toLocaleString('es-MX')}</span>` : ''}
+            </div>
+        `;
+
+        container.innerHTML = html;
+    }
 
     // Editar auditoría
     async editAudit(auditId) {

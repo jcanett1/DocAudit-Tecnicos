@@ -215,7 +215,22 @@
                         </div>
                     </div>
 
-                    <!-- 5. Gráficas principales -->
+                    <!-- 5. Tipos de errores más frecuentes -->
+                    <div class="stats-section">
+                        <h2 class="stats-section-title"><i class="fas fa-bug"></i> Tipos de Errores Más Frecuentes</h2>
+                        <p class="stats-section-subtitle">Análisis de los tipos de error registrados en órdenes con errores, ordenados por valor acumulado</p>
+                        <div class="top-errors-layout">
+                            <div class="top-errors-chart-wrap">
+                                <h3 class="chart-title"><i class="fas fa-chart-bar"></i> Top 10 Tipos de Error</h3>
+                                <canvas id="chartTopErrors" height="320"></canvas>
+                            </div>
+                            <div class="top-errors-table-wrap">
+                                <div id="statsTopErrorTypesTable" class="stats-table-wrapper"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6. Gráficas principales -->
                     <div class="stats-section">
                         <h2 class="stats-section-title"><i class="fas fa-chart-pie"></i> Gráficas de Auditorías</h2>
                         <div class="charts-row">
@@ -450,6 +465,22 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal de Detalle / Vista de Auditoría -->
+    <div id="viewAuditModal" class="modal">
+        <div class="modal-content view-modal-content">
+            <div class="modal-header view-modal-header">
+                <div class="view-modal-title-group">
+                    <i class="fas fa-clipboard-list"></i>
+                    <h2 id="viewModalTitle">Detalle de Auditoría</h2>
+                </div>
+                <button class="modal-close" id="closeViewModal">&times;</button>
+            </div>
+            <div class="view-modal-body" id="viewAuditContent">
+                <!-- Contenido generado dinámicamente -->
+            </div>
         </div>
     </div>
 

@@ -1222,3 +1222,404 @@ tbody tr:last-child td {
         font-size: 1.5rem;
     }
 }
+
+/* ============================================================
+   BOTÓN VER EN TABLA DE AUDITORÍAS
+   ============================================================ */
+
+.btn-view {
+    background: linear-gradient(135deg, #17a2b8, #20c997) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 7px !important;
+    padding: 0.4rem 0.65rem !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    font-size: 0.85rem !important;
+    box-shadow: 0 2px 6px rgba(23, 162, 184, 0.3) !important;
+}
+
+.btn-view:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(23, 162, 184, 0.45) !important;
+}
+
+/* ============================================================
+   MODAL DE DETALLE DE AUDITORÍA (VIEW MODAL)
+   ============================================================ */
+
+.view-modal-content {
+    max-width: 860px !important;
+    width: 95vw !important;
+    max-height: 90vh !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border-radius: 16px !important;
+}
+
+.view-modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    padding: 1.25rem 1.5rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-shrink: 0 !important;
+}
+
+.view-modal-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.view-modal-title-group i {
+    font-size: 1.3rem;
+    opacity: 0.9;
+}
+
+.view-modal-header h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: white;
+}
+
+.view-modal-header .modal-close {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 1.2rem !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: background 0.2s ease !important;
+    flex-shrink: 0 !important;
+}
+
+.view-modal-header .modal-close:hover {
+    background: rgba(255, 255, 255, 0.35) !important;
+}
+
+.view-modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Banner de estado */
+.view-status-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1.25rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 1.25rem;
+}
+
+.view-status-ok {
+    background: rgba(40, 167, 69, 0.1);
+    border: 1.5px solid rgba(40, 167, 69, 0.3);
+    color: #1a6e2e;
+}
+
+.view-status-ok i { color: #28a745; font-size: 1.1rem; }
+
+.view-status-error {
+    background: rgba(220, 53, 69, 0.08);
+    border: 1.5px solid rgba(220, 53, 69, 0.3);
+    color: #842029;
+}
+
+.view-status-error i { color: #dc3545; font-size: 1.1rem; }
+
+/* Grid de información */
+.view-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.view-info-section {
+    background: #f8f9ff;
+    border: 1px solid rgba(102, 126, 234, 0.12);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+}
+
+.view-section-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #495057;
+    margin: 0 0 0.85rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1.5px solid rgba(102, 126, 234, 0.12);
+}
+
+.view-section-title i { color: #667eea; }
+
+.view-section-title-red {
+    color: #842029 !important;
+    justify-content: space-between;
+}
+
+.view-section-title-red i { color: #dc3545 !important; }
+
+.view-total-badge {
+    font-size: 0.78rem;
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    padding: 0.2rem 0.7rem;
+    border-radius: 20px;
+    font-weight: 600;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+    margin-left: auto;
+}
+
+/* Lista de campos */
+.view-field-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.view-field {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px dashed rgba(102, 126, 234, 0.1);
+}
+
+.view-field:last-child {
+    border-bottom: none;
+}
+
+.view-field-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.view-field-value {
+    font-size: 0.875rem;
+    color: #2c3e50;
+    font-weight: 600;
+    text-align: right;
+}
+
+.view-highlight-red {
+    color: #dc3545 !important;
+    font-size: 1rem !important;
+}
+
+/* Sección de errores */
+.view-errors-section {
+    background: rgba(220, 53, 69, 0.03);
+    border: 1.5px solid rgba(220, 53, 69, 0.15);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.view-error-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.75rem;
+}
+
+.view-error-item {
+    border-radius: 8px;
+    padding: 0.7rem 0.9rem;
+    border: 1.5px solid;
+}
+
+.view-error-item.sev-low {
+    border-color: rgba(255, 193, 7, 0.4);
+    background: rgba(255, 193, 7, 0.05);
+}
+
+.view-error-item.sev-med {
+    border-color: rgba(253, 126, 20, 0.4);
+    background: rgba(253, 126, 20, 0.05);
+}
+
+.view-error-item.sev-high {
+    border-color: rgba(220, 53, 69, 0.4);
+    background: rgba(220, 53, 69, 0.05);
+}
+
+.view-error-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
+
+.view-error-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.view-error-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #dc3545;
+}
+
+.view-error-bar-track {
+    height: 5px;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.view-error-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #fd7e14, #dc3545);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+/* Notas */
+.view-notes-section {
+    background: rgba(255, 193, 7, 0.05);
+    border: 1.5px solid rgba(255, 193, 7, 0.25);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.view-notes-text {
+    font-size: 0.9rem;
+    color: #495057;
+    margin: 0;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+/* Metadatos */
+.view-meta {
+    display: flex;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(102, 126, 234, 0.1);
+    font-size: 0.78rem;
+    color: #adb5bd;
+}
+
+.view-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* ============================================================
+   SECCIÓN TOP ERRORES EN ESTADÍSTICAS
+   ============================================================ */
+
+.top-errors-layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.top-errors-chart-wrap {
+    background: white;
+    border: 1px solid rgba(102, 126, 234, 0.1);
+    border-radius: 10px;
+    padding: 1.25rem;
+}
+
+.top-errors-table-wrap {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid rgba(102, 126, 234, 0.12);
+}
+
+/* Badges de ranking */
+.rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 0.78rem;
+    font-weight: 700;
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+}
+
+.rank-badge.rank-gold   { background: rgba(255, 193, 7, 0.2);  color: #856404; }
+.rank-badge.rank-silver { background: rgba(108, 117, 125, 0.15); color: #495057; }
+.rank-badge.rank-bronze { background: rgba(205, 127, 50, 0.15); color: #7d4e1a; }
+
+/* Barra de frecuencia visual en tabla */
+.freq-bar-track {
+    height: 8px;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    min-width: 80px;
+}
+
+.freq-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+
+/* ============================================================
+   RESPONSIVE PARA MODAL DE VISTA Y TOP ERRORES
+   ============================================================ */
+
+@media (max-width: 768px) {
+    .view-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .view-error-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .top-errors-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .top-errors-chart-wrap {
+        order: 2;
+    }
+
+    .top-errors-table-wrap {
+        order: 1;
+    }
+}
+
+@media (max-width: 480px) {
+    .view-error-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .view-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}

@@ -8,7 +8,7 @@ class StatsModule {
         this.charts = {};   // Instancias de Chart.js activas
         this.data = [];     // Datos cargados
 
-        // Campos de error que se suman para calcular total de errores por orden
+        // Campos de error con sus etiquetas legibles
         this.ERROR_FIELDS = [
             'components_error', 'tipping_error', 'hosel_setting_error',
             'shaft_stepping_error', 'wood_putter_weights_error', 'club_length_error',
@@ -16,6 +16,25 @@ class StatsModule {
             'grip_alignment_error', 'grip_length_error', 'wraps_error',
             'swing_weight_error', 'cleanliness_error', 'boxing_error'
         ];
+
+        this.ERROR_LABELS = {
+            components_error:         'Components',
+            tipping_error:            'Tipping',
+            hosel_setting_error:      'Hosel Setting',
+            shaft_stepping_error:     'Shaft Stepping',
+            wood_putter_weights_error:'Wood/Putter Weights',
+            club_length_error:        'Club Length',
+            shaft_alignment_error:    'Shaft Alignment',
+            ferrules_error:           'Ferrules',
+            loft_error:               'Loft',
+            lie_error:                'Lie',
+            grip_alignment_error:     'Grip Alignment',
+            grip_length_error:        'Grip Length',
+            wraps_error:              'Wraps',
+            swing_weight_error:       'Swing Weight',
+            cleanliness_error:        'Cleanliness',
+            boxing_error:             'Boxing'
+        };
 
         this.bindEvents();
         this.setDefaultDates();
@@ -59,8 +78,8 @@ class StatsModule {
 
     // ── Cargar datos y renderizar todo ───────────────────────
     async loadAndRender() {
-        const fromVal = document.getElementById('statsFilterFrom')?.value || '';
-        const toVal   = document.getElementById('statsFilterTo')?.value   || '';
+        const fromVal    = document.getElementById('statsFilterFrom')?.value || '';
+        const toVal      = document.getElementById('statsFilterTo')?.value   || '';
         const auditorVal = document.getElementById('statsFilterAuditor')?.value || '';
 
         this.showLoading(true);
@@ -68,23 +87,18 @@ class StatsModule {
         this.showNoData(false);
 
         try {
-            // Construir parámetros de consulta
             const params = new URLSearchParams();
             params.append('order', 'audit_date.asc');
             params.append('limit', '5000');
-            if (fromVal) params.append('audit_date', `gte.${fromVal}`);
-            if (toVal)   params.append('audit_date', `lte.${toVal}`);
+            if (fromVal)    params.append('audit_date', `gte.${fromVal}`);
+            if (toVal)      params.append('audit_date', `lte.${toVal}`);
             if (auditorVal) params.append('checked_by', `eq.${auditorVal}`);
 
-            const supabaseURL = this.api.supabaseURL;
-            const supabaseKey = this.api.supabaseKey;
-            const tableName   = this.api.tableName;
-
-            const url = `${supabaseURL}/rest/v1/${tableName}?${params.toString()}`;
+            const url = `${this.api.supabaseURL}/rest/v1/${this.api.tableName}?${params.toString()}`;
             const response = await fetch(url, {
                 headers: {
-                    'apikey': supabaseKey,
-                    'Authorization': `Bearer ${supabaseKey}`,
+                    'apikey': this.api.supabaseKey,
+                    'Authorization': `Bearer ${this.api.supabaseKey}`,
                     'Content-Type': 'application/json'
                 }
             });
@@ -115,6 +129,7 @@ class StatsModule {
         this.renderDailyTable();
         this.renderRepeatedOrders();
         this.renderErrorClassification();
+        this.renderTopErrorTypes();   // ← NUEVA SECCIÓN
         this.renderPieChart();
         this.renderBarChart();
         this.renderCellChart();
@@ -126,16 +141,11 @@ class StatsModule {
         const container = document.getElementById('statsSummaryCards');
         if (!container) return;
 
-        const total       = this.data.length;
-        const withErrors  = this.data.filter(a => a.errors_found).length;
-        const noErrors    = total - withErrors;
-        const pct         = total > 0 ? Math.round((withErrors / total) * 100) : 0;
-        const totalGCErr  = this.data.reduce((s, a) => s + (parseInt(a.gc_with_errors) || 0), 0);
-
-        // Órdenes únicas
-        const uniqueOrders = new Set(this.data.map(a => a.order_number).filter(Boolean)).size;
-
-        // Fechas únicas
+        const total      = this.data.length;
+        const withErrors = this.data.filter(a => a.errors_found).length;
+        const noErrors   = total - withErrors;
+        const pct        = total > 0 ? Math.round((withErrors / total) * 100) : 0;
+        const totalGCErr = this.data.reduce((s, a) => s + (parseInt(a.gc_with_errors) || 0), 0);
         const uniqueDates = new Set(this.data.map(a => a.audit_date).filter(Boolean)).size;
 
         container.innerHTML = `
@@ -177,7 +187,6 @@ class StatsModule {
         const container = document.getElementById('statsDailyTable');
         if (!container) return;
 
-        // Agrupar por fecha
         const byDate = {};
         this.data.forEach(a => {
             const d = a.audit_date || 'Sin fecha';
@@ -190,7 +199,6 @@ class StatsModule {
         });
 
         const sortedDates = Object.keys(byDate).sort();
-
         if (sortedDates.length === 0) {
             container.innerHTML = '<p class="no-data-inline">Sin datos para el período seleccionado.</p>';
             return;
@@ -256,7 +264,6 @@ class StatsModule {
             return;
         }
 
-        // Ordenar por cantidad de repeticiones descendente
         repeated.sort((a, b) => b[1].length - a[1].length);
 
         let html = `
@@ -297,10 +304,8 @@ class StatsModule {
 
     // ── 4. Clasificación de errores por orden ────────────────
     renderErrorClassification() {
-        // Solo registros con errores
         const withErrors = this.data.filter(a => a.errors_found);
 
-        // Calcular total de errores de tipo por registro
         const classified = withErrors.map(a => ({
             order:    a.order_number || '(sin orden)',
             date:     this.formatDateDisplay(a.audit_date),
@@ -310,9 +315,8 @@ class StatsModule {
             total:    this.getTotalErrors(a)
         }));
 
-        // Categorías
         const low    = classified.filter(r => r.total >= 1 && r.total <= 2);
-        const medium = classified.filter(r => r.total >= 2 && r.total <= 5);
+        const medium = classified.filter(r => r.total > 2 && r.total <= 5);
         const high   = classified.filter(r => r.total > 5);
 
         this.renderErrorList('count-low',    'list-low',    low);
@@ -362,12 +366,150 @@ class StatsModule {
         listEl.innerHTML = html;
     }
 
-    // ── 5. Gráfica de pastel ─────────────────────────────────
+    // ── 5. Tipos de errores más frecuentes (NUEVA) ───────────
+    renderTopErrorTypes() {
+        const tableContainer = document.getElementById('statsTopErrorTypesTable');
+        const chartCanvas    = document.getElementById('chartTopErrors');
+        if (!tableContainer || !chartCanvas) return;
+
+        // Solo registros con errores encontrados
+        const withErrors = this.data.filter(a => a.errors_found);
+
+        if (withErrors.length === 0) {
+            tableContainer.innerHTML = '<p class="no-data-inline">No hay registros con errores en el período seleccionado.</p>';
+            if (this.charts.topErrors) { this.charts.topErrors.destroy(); delete this.charts.topErrors; }
+            return;
+        }
+
+        // Sumar el valor de cada tipo de error en todos los registros con errores
+        const totals = {};
+        this.ERROR_FIELDS.forEach(field => {
+            totals[field] = withErrors.reduce((sum, a) => sum + (parseInt(a[field]) || 0), 0);
+        });
+
+        // Contar en cuántos registros aparece cada tipo (valor > 0)
+        const occurrences = {};
+        this.ERROR_FIELDS.forEach(field => {
+            occurrences[field] = withErrors.filter(a => (parseInt(a[field]) || 0) > 0).length;
+        });
+
+        // Ordenar por total acumulado descendente
+        const sorted = this.ERROR_FIELDS
+            .map(field => ({
+                field,
+                label:      this.ERROR_LABELS[field],
+                total:      totals[field],
+                count:      occurrences[field],
+                pct:        withErrors.length > 0 ? Math.round((occurrences[field] / withErrors.length) * 100) : 0
+            }))
+            .filter(e => e.total > 0)
+            .sort((a, b) => b.total - a.total);
+
+        if (sorted.length === 0) {
+            tableContainer.innerHTML = '<p class="no-data-inline">No se registraron valores de error en los campos de tipo.</p>';
+            if (this.charts.topErrors) { this.charts.topErrors.destroy(); delete this.charts.topErrors; }
+            return;
+        }
+
+        // ── Tabla ────────────────────────────────────────────
+        const maxTotal = sorted[0].total;
+        let html = `
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Tipo de Error</th>
+                        <th>Valor Acumulado</th>
+                        <th>Registros Afectados</th>
+                        <th>% de Órdenes con Error</th>
+                        <th>Frecuencia Visual</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        sorted.forEach((e, i) => {
+            const barWidth = maxTotal > 0 ? Math.round((e.total / maxTotal) * 100) : 0;
+            const rankClass = i === 0 ? 'rank-gold' : i === 1 ? 'rank-silver' : i === 2 ? 'rank-bronze' : '';
+            const pctClass  = e.pct === 0 ? 'pct-ok' : e.pct <= 30 ? 'pct-warn' : 'pct-bad';
+            html += `
+                <tr>
+                    <td class="text-center">
+                        <span class="rank-badge ${rankClass}">${i + 1}</span>
+                    </td>
+                    <td><strong>${e.label}</strong></td>
+                    <td class="text-center"><strong>${e.total}</strong></td>
+                    <td class="text-center">${e.count}</td>
+                    <td class="text-center"><span class="pct-badge ${pctClass}">${e.pct}%</span></td>
+                    <td>
+                        <div class="freq-bar-track">
+                            <div class="freq-bar-fill" style="width:${barWidth}%"></div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+        tableContainer.innerHTML = html;
+
+        // ── Gráfica de barras horizontales ───────────────────
+        if (this.charts.topErrors) { this.charts.topErrors.destroy(); delete this.charts.topErrors; }
+
+        // Mostrar máximo los 10 primeros para no saturar la gráfica
+        const top10 = sorted.slice(0, 10);
+        const colors = top10.map((_, i) => {
+            const palette = [
+                '#dc3545','#fd7e14','#ffc107','#28a745','#17a2b8',
+                '#667eea','#6f42c1','#e83e8c','#20c997','#6c757d'
+            ];
+            return palette[i] || '#667eea';
+        });
+
+        this.charts.topErrors = new Chart(chartCanvas, {
+            type: 'bar',
+            data: {
+                labels: top10.map(e => e.label),
+                datasets: [{
+                    label: 'Valor Acumulado de Errores',
+                    data: top10.map(e => e.total),
+                    backgroundColor: colors.map(c => c + 'CC'),
+                    borderColor: colors,
+                    borderWidth: 2,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => {
+                                const e = top10[ctx.dataIndex];
+                                return [
+                                    ` Valor acumulado: ${e.total}`,
+                                    ` Registros afectados: ${e.count}`,
+                                    ` % de órdenes con error: ${e.pct}%`
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { beginAtZero: true, ticks: { stepSize: 1 } },
+                    y: { ticks: { font: { size: 12 } } }
+                }
+            }
+        });
+    }
+
+    // ── 6. Gráfica de pastel ─────────────────────────────────
     renderPieChart() {
         const canvas = document.getElementById('chartPie');
         if (!canvas) return;
 
-        // Destruir instancia anterior si existe
         if (this.charts.pie) { this.charts.pie.destroy(); delete this.charts.pie; }
 
         const withErrors = this.data.filter(a => a.errors_found).length;
@@ -405,14 +547,13 @@ class StatsModule {
         });
     }
 
-    // ── 6. Gráfica de barras (registros por día) ─────────────
+    // ── 7. Gráfica de barras (registros por día) ─────────────
     renderBarChart() {
         const canvas = document.getElementById('chartBar');
         if (!canvas) return;
 
         if (this.charts.bar) { this.charts.bar.destroy(); delete this.charts.bar; }
 
-        // Agrupar por fecha
         const byDate = {};
         this.data.forEach(a => {
             const d = a.audit_date || 'Sin fecha';
@@ -422,7 +563,7 @@ class StatsModule {
         });
 
         const sortedDates = Object.keys(byDate).sort();
-        const labels = sortedDates.map(d => this.formatDateDisplay(d));
+        const labels  = sortedDates.map(d => this.formatDateDisplay(d));
         const okData  = sortedDates.map(d => byDate[d].ok);
         const errData = sortedDates.map(d => byDate[d].err);
 
@@ -452,15 +593,8 @@ class StatsModule {
             options: {
                 responsive: true,
                 scales: {
-                    x: {
-                        stacked: true,
-                        ticks: { maxRotation: 45, font: { size: 11 } }
-                    },
-                    y: {
-                        stacked: true,
-                        beginAtZero: true,
-                        ticks: { stepSize: 1 }
-                    }
+                    x: { stacked: true, ticks: { maxRotation: 45, font: { size: 11 } } },
+                    y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } }
                 },
                 plugins: {
                     legend: { position: 'bottom' },
@@ -470,7 +604,7 @@ class StatsModule {
         });
     }
 
-    // ── 7. Gráfica por celda ─────────────────────────────────
+    // ── 8. Gráfica por celda ─────────────────────────────────
     renderCellChart() {
         const canvas = document.getElementById('chartCell');
         if (!canvas) return;
@@ -488,7 +622,6 @@ class StatsModule {
             else byCell[c].ok++;
         });
 
-        // Filtrar celdas con al menos un registro
         const activeCells = CELLS.filter(c => byCell[c].ok + byCell[c].err > 0);
         const labels  = activeCells.map(c => `Celda ${c}`);
         const okData  = activeCells.map(c => byCell[c].ok);
@@ -540,12 +673,11 @@ class StatsModule {
         });
     }
 
-    // ── 8. Tabla por usuario ─────────────────────────────────
+    // ── 9. Tabla por usuario ─────────────────────────────────
     renderUserTable() {
         const container = document.getElementById('statsUserTable');
         if (!container) return;
 
-        // Agrupar por auditor + fecha
         const byUserDate = {};
         this.data.forEach(a => {
             const user = a.checked_by || 'Sin asignar';
@@ -571,7 +703,6 @@ class StatsModule {
             return;
         }
 
-        // Totales por usuario
         const userTotals = {};
         rows.forEach(r => {
             if (!userTotals[r.user]) userTotals[r.user] = { ok: 0, err: 0, gcErrors: 0 };
@@ -600,7 +731,7 @@ class StatsModule {
         rows.forEach(r => {
             const total = r.ok + r.err;
             const pct   = total > 0 ? Math.round((r.err / total) * 100) : 0;
-            const pctClass = pct === 0 ? 'pct-ok' : pct <= 30 ? 'pct-warn' : 'pct-bad';
+            const pctClass  = pct === 0 ? 'pct-ok' : pct <= 30 ? 'pct-warn' : 'pct-bad';
             const isNewUser = r.user !== lastUser;
             lastUser = r.user;
 
@@ -617,7 +748,6 @@ class StatsModule {
             `;
         });
 
-        // Filas de totales por usuario
         html += '<tr class="totals-separator"><td colspan="7"></td></tr>';
         Object.entries(userTotals).forEach(([user, t]) => {
             const total = t.ok + t.err;
@@ -658,24 +788,20 @@ class StatsModule {
 
 // ── Inicialización de pestañas ───────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-    // Sistema de pestañas
-    const tabBtns    = document.querySelectorAll('.tab-btn');
+    const tabBtns     = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
 
     tabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             const target = btn.dataset.tab;
-
             tabBtns.forEach(b => b.classList.remove('active'));
             tabContents.forEach(c => c.classList.remove('active'));
-
             btn.classList.add('active');
             const targetEl = document.getElementById(`tab-${target}`);
             if (targetEl) targetEl.classList.add('active');
         });
     });
 
-    // Inicializar módulo de estadísticas cuando la API esté lista
     const waitForAPI = setInterval(() => {
         if (window.auditAPI) {
             clearInterval(waitForAPI);
