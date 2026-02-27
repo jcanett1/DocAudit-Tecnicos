@@ -125,7 +125,7 @@ class StatsModule {
         }
     }
 
-    // ── Renderizar todo ──────────────────────────────────────
+       // ── Renderizar todo ──────────────────────────────────
     renderAll() {
         this.renderSummaryCards();
         this.renderDailyTable();
@@ -135,6 +135,7 @@ class StatsModule {
         this.renderPieChart();
         this.renderBarChart();
         this.renderCellChart();
+        this.renderCellDetailTable();  // ← NUEVA SECCIÓN DE ESTADÍSTICAS POR CELDA
         this.renderUserTable();
     }
 
@@ -769,9 +770,170 @@ class StatsModule {
 
         html += '</tbody></table>';
         container.innerHTML = html;
+        // ── 10. Tabla de estadísticas detalladas por celda ──────────────────────────────────
+    renderCellDetailTable() {
+        const container = document.getElementById('statsCellDetailTable');
+        if (!container) return;
+
+        const CELLS = ['5', '10', '11', '15', '16', 'kiteo', 'otras'];
+        const cellStats = {};
+        
+        // Inicializar estadísticas por celda
+        CELLS.forEach(c => {
+            cellStats[c] = {
+                totalIngresos: 0,
+                ingresosConError: 0,
+                ingresosSinError: 0,
+                totalErrores: 0,
+                errorTypes: {}
+            };
+            // Inicializar contadores de tipos de error
+            this.ERROR_FIELDS.forEach(field => {
+                cellStats[c].errorTypes[field] = 0;
+            });
+        });
+
+        // Procesar datos
+        this.data.forEach(audit => {
+            const cell = audit.build_cell || 'otras';
+            if (!cellStats[cell]) {
+                cellStats[cell] = {
+                    totalIngresos: 0,
+                    ingresosConError: 0,
+                    ingresosSinError: 0,
+                    totalErrores: 0,
+                    errorTypes: {}
+                };
+                this.ERROR_FIELDS.forEach(field => {
+                    cellStats[cell].errorTypes[field] = 0;
+                });
+            }
+
+            cellStats[cell].totalIngresos++;
+            
+            if (audit.errors_found) {
+                cellStats[cell].ingresosConError++;
+            } else {
+                cellStats[cell].ingresosSinError++;
+            }
+
+            // Sumar errores por tipo
+            this.ERROR_FIELDS.forEach(field => {
+                const errorValue = parseInt(audit[field]) || 0;
+                cellStats[cell].errorTypes[field] += errorValue;
+                cellStats[cell].totalErrores += errorValue;
+            });
+        });
+
+        // Filtrar celdas con datos
+        const activeCells = CELLS.filter(c => cellStats[c].totalIngresos > 0);
+        
+        if (activeCells.length === 0) {
+            container.innerHTML = '<p class="no-data-inline">Sin datos para el período seleccionado.</p>';
+            return;
+        }
+
+        // Crear tabla principal
+        let html = `
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>Celda</th>
+                        <th>Total Ingresos</th>
+                        <th>Ingresos Sin Error</th>
+                        <th>Ingresos Con Error</th>
+                        <th>% Con Error</th>
+                        <th>Total Errores</th>
+                        <th>Errores Promedio</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        let totalAllCells = 0;
+        let totalErrorsAllCells = 0;
+        let totalWithErrorsAllCells = 0;
+
+        activeCells.forEach(cell => {
+            const stats = cellStats[cell];
+            const pct = stats.totalIngresos > 0 ? Math.round((stats.ingresosConError / stats.totalIngresos) * 100) : 0;
+            const avgErrors = stats.ingresosConError > 0 ? (stats.totalErrores / stats.ingresosConError).toFixed(2) : '0.00';
+            const pctClass = pct === 0 ? 'pct-ok' : pct <= 30 ? 'pct-warn' : 'pct-bad';
+
+            totalAllCells += stats.totalIngresos;
+            totalErrorsAllCells += stats.totalErrores;
+            totalWithErrorsAllCells += stats.ingresosConError;
+
+            html += `
+                <tr>
+                    <td><strong>Celda ${cell}</strong></td>
+                    <td class="text-center"><strong>${stats.totalIngresos}</strong></td>
+                    <td class="text-center text-green">${stats.ingresosSinError}</td>
+                    <td class="text-center text-red">${stats.ingresosConError}</td>
+                    <td class="text-center"><span class="pct-badge ${pctClass}">${pct}%</span></td>
+                    <td class="text-center"><strong>${stats.totalErrores}</strong></td>
+                    <td class="text-center">${avgErrors}</td>
+                </tr>
+            `;
+        });
+
+        // Fila de totales
+        const totalPct = totalAllCells > 0 ? Math.round((totalWithErrorsAllCells / totalAllCells) * 100) : 0;
+        const totalAvgErrors = totalWithErrorsAllCells > 0 ? (totalErrorsAllCells / totalWithErrorsAllCells).toFixed(2) : '0.00';
+        const totalPctClass = totalPct === 0 ? 'pct-ok' : totalPct <= 30 ? 'pct-warn' : 'pct-bad';
+
+        html += `
+            <tr class="totals-row">
+                <td colspan="1"><strong>TOTAL</strong></td>
+                <td class="text-center"><strong>${totalAllCells}</strong></td>
+                <td class="text-center text-green"><strong>${totalAllCells - totalWithErrorsAllCells}</strong></td>
+                <td class="text-center text-red"><strong>${totalWithErrorsAllCells}</strong></td>
+                <td class="text-center"><span class="pct-badge ${totalPctClass}">${totalPct}%</span></td>
+                <td class="text-center"><strong>${totalErrorsAllCells}</strong></td>
+                <td class="text-center"><strong>${totalAvgErrors}</strong></td>
+            </tr>
+        `;
+
+        html += '</tbody></table>';
+
+        // Crear tabla de tipos de errores por celda
+        html += `
+            <div style="margin-top: 30px;">
+                <h3 style="margin-bottom: 15px; color: #333;"><i class="fas fa-bug"></i> Desglose de Tipos de Errores por Celda</h3>
+                <table class="stats-table">
+                    <thead>
+                        <tr>
+                            <th>Tipo de Error</th>
+        `;
+
+        activeCells.forEach(cell => {
+            html += `<th class="text-center">Celda ${cell}</th>`;
+        });
+        html += `<th class="text-center">Total</th></tr></thead><tbody>`;
+
+        // Procesar cada tipo de error
+        this.ERROR_FIELDS.forEach(field => {
+            const label = this.ERROR_LABELS[field];
+            let rowTotal = 0;
+            let hasData = false;
+
+            html += `<tr><td><strong>${label}</strong></td>`;
+
+            activeCells.forEach(cell => {
+                const value = cellStats[cell].errorTypes[field];
+                rowTotal += value;
+                if (value > 0) hasData = true;
+                html += `<td class="text-center">${value > 0 ? value : '-'}</td>`;
+            });
+
+            html += `<td class="text-center"><strong>${rowTotal > 0 ? rowTotal : '-'}</strong></td></tr>`;
+        });
+
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
     }
 
-    // ── Helpers de visibilidad ───────────────────────────────
+    // ── Helpers de visibilidad ──────────────────────────────────
     showLoading(show) {
         const el = document.getElementById('statsLoadingSpinner');
         if (el) el.style.display = show ? 'block' : 'none';
