@@ -605,7 +605,7 @@ class StatsModule {
 
         if (this.charts.cell) { this.charts.cell.destroy(); delete this.charts.cell; }
 
-        const CELLS = ['5', '10', '11', '15', '16', 'kiteo', 'otras'];
+        const CELLS = ['5', '6', '10', '11', '15', '16', 'kiteo', 'otras'];
         const byCell = {};
         CELLS.forEach(c => {
             byCell[c] = { ok: 0, err: 0, errorTypes: {} };
@@ -696,7 +696,7 @@ class StatsModule {
             return;
         }
 
-        const CELLS = ['5', '10', '11', '15', '16', 'kiteo', 'otras'];
+        const CELLS = ['5', '6', '10', '11', '15', '16', 'kiteo', 'otras'];
         const cellStats = {};
 
         CELLS.forEach(c => {

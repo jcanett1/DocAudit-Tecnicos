@@ -53,7 +53,7 @@ app.use((req, res, next) => {
 const auditValidation = [
   body('checked_by').isIn(['Karla', 'Adrián', 'Carmen']).withMessage('Auditor inválido'),
   body('audit_date').isISO8601().withMessage('Fecha de auditoría inválida'),
-  body('build_cell').isIn(['5', '10', '11', '15', '16', 'kiteo', 'otras']).withMessage('Celda inválida'),
+  body('build_cell').isIn(['5', '6', '10', '11', '15', '16', 'kiteo', 'otras']).withMessage('Celda inválida'),
   body('errors_found').isBoolean().withMessage('El campo errors_found debe ser booleano'),
   body('gc_with_errors').optional().isInt({ min: 0 }).withMessage('GC con errores debe ser un número positivo'),
   // Validar todos los campos de error (0-4)

@@ -64,7 +64,7 @@ ERROR_LABELS = {
     'boxing_error':              'Boxing',
 }
 ERROR_FIELDS = list(ERROR_LABELS.keys())
-CELLS        = ['5', '10', '11', '15', '16', 'kiteo', 'otras']
+CELLS        = ['5', '6', '10', '11', '15', '16', 'kiteo', 'otras']
 
 # ── Colores de marca ─────────────────────────────────────────
 BRAND   = colors.HexColor('#667eea')

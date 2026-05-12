@@ -277,7 +277,7 @@ class ReportsModule {
             y = this.addSectionTitle(doc, 'ERRORES POR CELDA', y, pageW);
             y += 2;
 
-            const CELLS = ['5', '10', '11', '15', '16', 'kiteo', 'otras'];
+            const CELLS = ['5', '6', '10', '11', '15', '16', 'kiteo', 'otras'];
             const byCell = {};
             CELLS.forEach(c => { byCell[c] = { ok: 0, err: 0, gc: 0, errorTypes: {} }; });
 
@@ -491,7 +491,7 @@ class ReportsModule {
                 y += 8;
 
                 const cellsOfDate = byDate[date];
-                const CELLS = ['5', '10', '11', '15', '16', 'kiteo', 'otras'];
+                const CELLS = ['5', '6', '10', '11', '15', '16', 'kiteo', 'otras'];
                 const activeCells = CELLS.filter(c => cellsOfDate[c]);
 
                 // Tabla resumen del día

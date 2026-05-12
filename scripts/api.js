@@ -26,7 +26,7 @@ class AuditAPI {
                 MAX_NOTES_LENGTH: 1000
             },
             AUDITORS: ['Karla', 'Adrián', 'Carmen'],
-            BUILD_CELLS: ['5', '10', '11', '15', '16', 'kiteo', 'otras'],
+            BUILD_CELLS: ['5', '6', '10', '11', '15', '16', 'kiteo', 'otras'],
             ERROR_TYPES: {
                 components: 'Components',
                 tipping: 'Tipping',

@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS public.dotaudit (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     checked_by VARCHAR(50) NOT NULL CHECK (checked_by IN ('Karla', 'Adrián', 'Carmen')),
     audit_date DATE NOT NULL,
-    build_cell VARCHAR(20) NOT NULL CHECK (build_cell IN ('5', '10', '11', '15', '16', 'kiteo', 'otras')),
+    build_cell VARCHAR(20) NOT NULL CHECK (build_cell IN ('5', '6', '10', '11', '15', '16', 'kiteo', 'otras')),
     operadores VARCHAR(100),
     order_number VARCHAR(50),
     sh VARCHAR(20),

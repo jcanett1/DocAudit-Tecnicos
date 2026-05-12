@@ -18,7 +18,7 @@ const CONFIG = {
     
     // Opciones predefinidas
     AUDITORS: ['Karla', 'Adrián', 'Carmen'],
-    BUILD_CELLS: ['5', '10', '11', '15', '16', 'kiteo', 'otras'],
+    BUILD_CELLS: ['5', '6', '10', '11', '15', '16', 'kiteo', 'otras'],
     ERROR_LEVELS: [0, 1, 2, 3, 4],
     
     // Configuración de paginación (si es necesaria en el futuro)
