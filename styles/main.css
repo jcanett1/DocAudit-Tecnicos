@@ -505,6 +505,209 @@ tbody tr:last-child td {
     font-size: 0.875rem;
 }
 
+/* ===== Imágenes de Evidencia ===== */
+.image-upload-area {
+    border: 2px dashed rgba(102, 126, 234, 0.4);
+    border-radius: 10px;
+    background: #f0f2ff;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+    margin-bottom: 1rem;
+}
+
+.image-upload-area:hover,
+.image-upload-area.drag-over {
+    border-color: #667eea;
+    background: #e8ecff;
+}
+
+.image-upload-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 2rem 1rem;
+    cursor: pointer;
+    color: #667eea;
+    font-weight: 500;
+}
+
+.image-upload-label i {
+    font-size: 2rem;
+}
+
+.image-upload-label span {
+    font-size: 0.95rem;
+}
+
+.image-upload-label small {
+    font-size: 0.78rem;
+    color: #6c757d;
+    font-weight: 400;
+}
+
+.image-previews-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.image-preview-item {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid rgba(102, 126, 234, 0.2);
+    background: #fff;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.image-preview-item img:hover {
+    opacity: 0.85;
+}
+
+.image-preview-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(220, 53, 69, 0.85);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    z-index: 2;
+}
+
+.image-preview-remove:hover {
+    background: #dc3545;
+}
+
+.image-preview-uploading {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: #667eea;
+}
+
+/* Imágenes en modal de vista */
+.view-images-section {
+    margin-top: 1.5rem;
+    padding: 1.25rem 1.5rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 1px solid rgba(102, 126, 234, 0.15);
+}
+
+.view-images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.view-image-thumb {
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid rgba(102, 126, 234, 0.2);
+    aspect-ratio: 1;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s;
+}
+
+.view-image-thumb:hover {
+    transform: scale(1.04);
+    border-color: #667eea;
+}
+
+.view-image-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Lightbox */
+.image-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lightbox-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.82);
+    cursor: pointer;
+}
+
+.lightbox-content {
+    position: relative;
+    z-index: 1;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lightbox-content img {
+    max-width: 90vw;
+    max-height: 85vh;
+    border-radius: 10px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    object-fit: contain;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: -14px;
+    right: -14px;
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    transition: background 0.2s;
+}
+
+.lightbox-close:hover {
+    background: #b02a37;
+}
+
 /* Form actions */
 .form-actions {
     display: flex;

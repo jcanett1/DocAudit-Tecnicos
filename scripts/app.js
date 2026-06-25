@@ -11,6 +11,9 @@ class AuditApp {
         this.pageSize = 50;
         this.totalRecords = 0;
         this.totalPages = 0;
+
+        // Imágenes pendientes de subir (array de objetos { file, previewUrl })
+        this.pendingImages = [];
         
         this.init();
     }
@@ -165,6 +168,9 @@ correctDateForTimezone(dateString) {
         document.getElementById('errors_found')?.addEventListener('change', (e) => {
             this.toggleErrorFields(e.target.checked);
         });
+
+        // Inicializar uploader de imágenes
+        this.bindImageUploadEvents();
 
         // Notificaciones
         document.querySelector('.notification-close')?.addEventListener('click', () => {
@@ -348,6 +354,13 @@ correctDateForTimezone(dateString) {
             this.setupDateField();
         }
 
+        // Limpiar imágenes pendientes al abrir el modal
+        this.pendingImages = [];
+        const previewGrid = document.getElementById('imagePreviews');
+        if (previewGrid) previewGrid.innerHTML = '';
+        const fileInput = document.getElementById('imageFileInput');
+        if (fileInput) fileInput.value = '';
+
         this.toggleErrorFields(false);
         modal.classList.add('show');
         document.body.style.overflow = 'hidden';
@@ -392,15 +405,127 @@ correctDateForTimezone(dateString) {
         }
     }
 
-    // Alternar campos de error
+    // Alternar campos de error e imágenes
     toggleErrorFields(show) {
-        const errorSections = ['gcWithErrorsGroup', 'errorTypesSection'];
+        const errorSections = ['gcWithErrorsGroup', 'errorTypesSection', 'imagesSection'];
         errorSections.forEach(sectionId => {
             const element = document.getElementById(sectionId);
             if (element) {
                 element.style.display = show ? 'block' : 'none';
             }
         });
+        // Limpiar previews si se oculta
+        if (!show) {
+            this.pendingImages = [];
+            const previewGrid = document.getElementById('imagePreviews');
+            if (previewGrid) previewGrid.innerHTML = '';
+            const fileInput = document.getElementById('imageFileInput');
+            if (fileInput) fileInput.value = '';
+        }
+    }
+
+    // Inicializar eventos del uploader de imágenes
+    bindImageUploadEvents() {
+        const fileInput = document.getElementById('imageFileInput');
+        const uploadArea = document.getElementById('imageUploadArea');
+
+        if (!fileInput || !uploadArea) return;
+
+        // Clic en el área abre el selector de archivos
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        // Selección de archivos
+        fileInput.addEventListener('change', (e) => {
+            this.handleImageFiles(Array.from(e.target.files));
+            fileInput.value = ''; // Permitir re-selección del mismo archivo
+        });
+
+        // Drag & Drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+        uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            this.handleImageFiles(files);
+        });
+    }
+
+    // Procesar archivos de imagen seleccionados
+    handleImageFiles(files) {
+        const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+        const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
+
+        files.forEach(file => {
+            if (!ALLOWED.includes(file.type)) {
+                this.showNotification(`Tipo no permitido: ${file.name}`, 'error');
+                return;
+            }
+            if (file.size > MAX_SIZE) {
+                this.showNotification(`La imagen "${file.name}" supera los 5 MB`, 'error');
+                return;
+            }
+            const previewUrl = URL.createObjectURL(file);
+            this.pendingImages.push({ file, previewUrl });
+            this.renderImagePreview(file, previewUrl, this.pendingImages.length - 1);
+        });
+    }
+
+    // Renderizar miniatura de imagen pendiente
+    renderImagePreview(file, previewUrl, index) {
+        const grid = document.getElementById('imagePreviews');
+        if (!grid) return;
+
+        const item = document.createElement('div');
+        item.className = 'image-preview-item';
+        item.dataset.index = index;
+
+        const img = document.createElement('img');
+        img.src = previewUrl;
+        img.alt = file.name;
+        img.title = file.name;
+        img.addEventListener('click', () => this.openLightbox(previewUrl));
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'image-preview-remove';
+        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+        removeBtn.title = 'Eliminar imagen';
+        removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.removePendingImage(index);
+        });
+
+        item.appendChild(img);
+        item.appendChild(removeBtn);
+        grid.appendChild(item);
+    }
+
+    // Eliminar imagen pendiente por índice
+    removePendingImage(index) {
+        if (this.pendingImages[index]) {
+            URL.revokeObjectURL(this.pendingImages[index].previewUrl);
+            this.pendingImages[index] = null; // Marcar como eliminada
+        }
+        // Eliminar el elemento del DOM
+        const grid = document.getElementById('imagePreviews');
+        if (grid) {
+            const item = grid.querySelector(`[data-index="${index}"]`);
+            if (item) item.remove();
+        }
+    }
+
+    // Abrir lightbox
+    openLightbox(src) {
+        const lb = document.getElementById('imageLightbox');
+        const img = document.getElementById('lightboxImg');
+        if (lb && img) {
+            img.src = src;
+            lb.style.display = 'flex';
+        }
     }
 
     // Extraer datos del formulario de manera robusta
@@ -492,13 +617,46 @@ async handleFormSubmit(e) {
         const formattedData = window.auditAPI.formatFormData(data);
 
         // Guardar
+        let savedAuditId = this.currentEditingId;
         if (this.currentEditingId) {
             await window.auditAPI.updateAudit(this.currentEditingId, formattedData);
-            this.showNotification(this.config.UI.UPDATE_SUCCESS_MESSAGE, 'success');
         } else {
-            await window.auditAPI.createAudit(formattedData);
-            this.showNotification(this.config.UI.SAVE_SUCCESS_MESSAGE, 'success');
+            // Necesitamos el ID de la auditoría recién creada para asociar las imágenes
+            const created = await window.auditAPI.createAuditWithReturn(formattedData);
+            savedAuditId = created && created.id ? created.id : null;
         }
+
+        // Subir imágenes pendientes si hay errores y hay imágenes
+        const imagesToUpload = this.pendingImages.filter(Boolean);
+        if (savedAuditId && imagesToUpload.length > 0) {
+            this.showNotification(`Subiendo ${imagesToUpload.length} imagen(es)...`, 'info');
+            let uploadErrors = 0;
+            for (const imgObj of imagesToUpload) {
+                try {
+                    const url = await window.auditAPI.uploadImageToStorage(imgObj.file, savedAuditId);
+                    await window.auditAPI.saveImageRecord(savedAuditId, url);
+                } catch (imgErr) {
+                    console.error('Error subiendo imagen:', imgErr);
+                    uploadErrors++;
+                }
+            }
+            if (uploadErrors > 0) {
+                this.showNotification(`Auditoría guardada, pero ${uploadErrors} imagen(es) no pudieron subirse.`, 'error');
+            } else {
+                this.showNotification(
+                    this.currentEditingId ? this.config.UI.UPDATE_SUCCESS_MESSAGE : this.config.UI.SAVE_SUCCESS_MESSAGE,
+                    'success'
+                );
+            }
+        } else {
+            this.showNotification(
+                this.currentEditingId ? this.config.UI.UPDATE_SUCCESS_MESSAGE : this.config.UI.SAVE_SUCCESS_MESSAGE,
+                'success'
+            );
+        }
+
+        // Limpiar imágenes pendientes
+        this.pendingImages = [];
 
         // Recargar datos
         await this.loadAudits();
@@ -518,7 +676,7 @@ async handleFormSubmit(e) {
                 this.showNotification('No se encontró la auditoría', 'error');
                 return;
             }
-            this.renderViewModal(audit);
+            await this.renderViewModal(audit);
             const modal = document.getElementById('viewAuditModal');
             if (modal) {
                 modal.classList.add('show');
@@ -531,7 +689,7 @@ async handleFormSubmit(e) {
     }
 
     // Renderizar contenido del modal de vista
-    renderViewModal(audit) {
+    async renderViewModal(audit) {
         const container = document.getElementById('viewAuditContent');
         const titleEl   = document.getElementById('viewModalTitle');
         if (!container) return;
@@ -682,6 +840,25 @@ async handleFormSubmit(e) {
                     <p class="view-notes-text">${audit.notes}</p>
                 </div>
             `;
+        }
+
+        // ── Imágenes de evidencia (solo si tiene errores) ──
+        if (hasErrors) {
+            const images = await window.auditAPI.getAuditImages(audit.id);
+            if (images.length > 0) {
+                html += `
+                    <div class="view-images-section">
+                        <h3 class="view-section-title"><i class="fas fa-camera"></i> Imágenes de Evidencia <span class="view-total-badge">${images.length}</span></h3>
+                        <div class="view-images-grid">
+                            ${images.map(img => `
+                                <div class="view-image-thumb" onclick="auditApp.openLightbox('${img.image_url}')" title="Ver imagen">
+                                    <img src="${img.image_url}" alt="Evidencia" loading="lazy">
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
         }
 
         // ── Metadatos ──

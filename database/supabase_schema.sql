@@ -80,3 +80,48 @@ COMMENT ON COLUMN public.dotaudit.build_cell IS 'Número de celda donde se const
 COMMENT ON COLUMN public.dotaudit.errors_found IS 'Indica si se encontraron errores';
 COMMENT ON COLUMN public.dotaudit.gc_with_errors IS 'Cantidad de palos de golf con errores';
 COMMENT ON COLUMN public.dotaudit.notes IS 'Notas adicionales sobre la auditoría';
+
+-- ============================================================
+-- TABLA: dotaudit_images
+-- Almacena las URLs de imágenes de evidencia por auditoría
+-- Creada manualmente en Supabase (Jun 2025)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS public.dotaudit_images (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  dotaudit_id uuid NOT NULL,
+  image_url text NOT NULL,
+  created_at timestamp with time zone NULL DEFAULT now(),
+  CONSTRAINT dotaudit_images_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_dotaudit_images_dotaudit FOREIGN KEY (dotaudit_id)
+    REFERENCES dotaudit (id) ON DELETE CASCADE
+) TABLESPACE pg_default;
+
+CREATE INDEX IF NOT EXISTS idx_dotaudit_images_dotaudit_id
+  ON public.dotaudit_images USING btree (dotaudit_id) TABLESPACE pg_default;
+
+-- Habilitar Row Level Security
+ALTER TABLE public.dotaudit_images ENABLE ROW LEVEL SECURITY;
+
+-- Políticas de seguridad para dotaudit_images
+CREATE POLICY "Habilitar lectura para todos" ON public.dotaudit_images
+    FOR SELECT USING (true);
+
+CREATE POLICY "Habilitar inserción para todos" ON public.dotaudit_images
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Habilitar eliminación para todos" ON public.dotaudit_images
+    FOR DELETE USING (true);
+
+-- ============================================================
+-- STORAGE: Bucket dotaudit-images
+-- Crear manualmente en Supabase Dashboard > Storage
+-- Configuración requerida:
+--   - Nombre: dotaudit-images
+--   - Acceso: Public
+--   - Tamaño máximo: 5 MB
+--   - Tipos permitidos: image/jpeg, image/png, image/webp
+-- ============================================================
+-- Política de Storage para permitir subida con anon key:
+-- INSERT INTO storage.policies (name, bucket_id, operation, definition)
+-- VALUES ('Allow public uploads', 'dotaudit-images', 'INSERT', 'true');

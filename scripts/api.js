@@ -191,6 +191,26 @@ class AuditAPI {
         }
     }
 
+    // Crear nueva auditoría y devolver el registro completo (con ID)
+    async createAuditWithReturn(auditData) {
+        try {
+            const response = await this.request(this.endpoints.audits, {
+                method: 'POST',
+                headers: {
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(auditData),
+            });
+            // Supabase devuelve un array con el registro creado cuando Prefer: return=representation
+            if (Array.isArray(response) && response.length > 0) {
+                return response[0];
+            }
+            return response || { success: true };
+        } catch (error) {
+            throw new Error(`Error al crear auditoría: ${error.message}`);
+        }
+    }
+
     // Actualizar auditoría
     async updateAudit(id, auditData) {
         try {
@@ -380,6 +400,68 @@ class AuditAPI {
         }
         
         return dateStr;
+    }
+
+    // ===== Métodos para imágenes (dotaudit_images) =====
+
+    // Subir imagen a Supabase Storage y devolver la URL pública
+    async uploadImageToStorage(file, dotauditId) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        const fileName = `${dotauditId}/${Date.now()}_${Math.random().toString(36).substr(2, 8)}.${ext}`;
+        const bucketName = 'dotaudit-images';
+
+        const uploadUrl = `${this.supabaseURL}/storage/v1/object/${bucketName}/${fileName}`;
+
+        const response = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: {
+                'apikey': this.supabaseKey,
+                'Authorization': `Bearer ${this.supabaseKey}`,
+                'Content-Type': file.type,
+                'x-upsert': 'true'
+            },
+            body: file
+        });
+
+        if (!response.ok) {
+            const err = await response.text();
+            throw new Error(`Error al subir imagen: ${err}`);
+        }
+
+        // Construir URL pública
+        const publicUrl = `${this.supabaseURL}/storage/v1/object/public/${bucketName}/${fileName}`;
+        return publicUrl;
+    }
+
+    // Guardar registro de imagen en la tabla dotaudit_images
+    async saveImageRecord(dotauditId, imageUrl) {
+        const endpoint = `/rest/v1/dotaudit_images`;
+        const response = await this.request(endpoint, {
+            method: 'POST',
+            headers: {
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify({ dotaudit_id: dotauditId, image_url: imageUrl })
+        });
+        return response;
+    }
+
+    // Obtener imágenes de una auditoría
+    async getAuditImages(dotauditId) {
+        try {
+            const endpoint = `/rest/v1/dotaudit_images?dotaudit_id=eq.${dotauditId}&order=created_at.asc`;
+            const response = await this.request(endpoint);
+            return Array.isArray(response) ? response : [];
+        } catch (error) {
+            console.error('Error obteniendo imágenes:', error);
+            return [];
+        }
+    }
+
+    // Eliminar imagen por ID
+    async deleteImage(imageId) {
+        const endpoint = `/rest/v1/dotaudit_images?id=eq.${imageId}`;
+        await this.request(endpoint, { method: 'DELETE' });
     }
 
     // Formatear datos del formulario para la API
