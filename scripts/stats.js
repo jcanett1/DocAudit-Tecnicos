@@ -112,6 +112,33 @@ class StatsModule {
                 return;
             }
 
+            // Cargar imágenes de auditorías con errores en el período
+            const auditIdsWithErrors = this.data
+                .filter(a => a.errors_found)
+                .map(a => a.id);
+
+            this.imagesData = [];
+            if (auditIdsWithErrors.length > 0) {
+                try {
+                    const idsParam = `(${auditIdsWithErrors.join(',')})`;  
+                    const imgUrl = `${this.api.supabaseURL}/rest/v1/dotaudit_images?dotaudit_id=in.${idsParam}&order=created_at.asc&limit=1000`;
+                    const imgResp = await fetch(imgUrl, {
+                        headers: {
+                            'apikey': this.api.supabaseKey,
+                            'Authorization': `Bearer ${this.api.supabaseKey}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    if (imgResp.ok) {
+                        const imgData = await imgResp.json();
+                        this.imagesData = Array.isArray(imgData) ? imgData : [];
+                    }
+                } catch (imgErr) {
+                    console.warn('No se pudieron cargar imágenes:', imgErr);
+                    this.imagesData = [];
+                }
+            }
+
             this.renderAll();
             this.showContent(true);
             // Habilitar botones de descarga
@@ -127,7 +154,7 @@ class StatsModule {
 
     // ── Renderizar todo ──────────────────────────────────────
     renderAll() {
-        this.renderSummaryCards();
+        this.renderSummaryCards();       // incluye tarjeta de imágenes
         this.renderDailyTable();
         this.renderRepeatedOrders();
         this.renderErrorClassification();
@@ -135,8 +162,9 @@ class StatsModule {
         this.renderPieChart();
         this.renderBarChart();
         this.renderCellChart();
-        this.renderCellDetailTable();  // ← SECCIÓN DE ESTADÍSTICAS POR CELDA
+        this.renderCellDetailTable();
         this.renderUserTable();
+        this.renderEvidenceGallery();    // ← NUEVA: galería de imágenes de evidencia
     }
 
     // ── 1. Tarjetas de resumen ───────────────────────────────
@@ -144,12 +172,13 @@ class StatsModule {
         const container = document.getElementById('statsSummaryCards');
         if (!container) return;
 
-        const total      = this.data.length;
-        const withErrors = this.data.filter(a => a.errors_found).length;
-        const noErrors   = total - withErrors;
-        const pct        = total > 0 ? Math.round((withErrors / total) * 100) : 0;
-        const totalGCErr = this.data.reduce((s, a) => s + (parseInt(a.gc_with_errors) || 0), 0);
+        const total       = this.data.length;
+        const withErrors  = this.data.filter(a => a.errors_found).length;
+        const noErrors    = total - withErrors;
+        const pct         = total > 0 ? Math.round((withErrors / total) * 100) : 0;
+        const totalGCErr  = this.data.reduce((s, a) => s + (parseInt(a.gc_with_errors) || 0), 0);
         const uniqueDates = new Set(this.data.map(a => a.audit_date).filter(Boolean)).size;
+        const totalImages = (this.imagesData || []).length;
 
         container.innerHTML = `
             <div class="stat-card stat-blue">
@@ -181,6 +210,11 @@ class StatsModule {
                 <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
                 <div class="stat-value">${uniqueDates}</div>
                 <div class="stat-label">Días con Registros</div>
+            </div>
+            <div class="stat-card stat-img">
+                <div class="stat-icon"><i class="fas fa-camera"></i></div>
+                <div class="stat-value">${totalImages}</div>
+                <div class="stat-label">Imágenes de Evidencia</div>
             </div>
         `;
     }
@@ -920,6 +954,71 @@ class StatsModule {
     }
 
     // ── Helpers de visibilidad ───────────────────────────────
+    // Galeria de imagenes de evidencia
+    renderEvidenceGallery() {
+        const container = document.getElementById('statsEvidenceGallery');
+        if (!container) return;
+
+        const images = this.imagesData || [];
+
+        if (images.length === 0) {
+            container.innerHTML = `
+                <div class="no-repeated">
+                    <i class="fas fa-camera-slash" style="color:#6c757d;font-size:1.5rem;"></i>
+                    <span>No hay imágenes de evidencia en el período seleccionado.</span>
+                </div>`;
+            return;
+        }
+
+        // Agrupar imagenes por dotaudit_id
+        const byAudit = {};
+        images.forEach(img => {
+            if (!byAudit[img.dotaudit_id]) byAudit[img.dotaudit_id] = [];
+            byAudit[img.dotaudit_id].push(img);
+        });
+
+        // Mapa de auditorias por ID
+        const auditMap = {};
+        this.data.forEach(a => { auditMap[a.id] = a; });
+
+        let html = `<div class="evidence-gallery-wrapper">`;
+
+        Object.keys(byAudit).forEach(auditId => {
+            const audit   = auditMap[auditId];
+            const imgs    = byAudit[auditId];
+            const order   = audit?.order_number || '(sin orden)';
+            const date    = audit ? this.formatDateDisplay(audit.audit_date) : '-';
+            const auditor = audit?.checked_by || '-';
+            const cell    = audit?.build_cell || '-';
+            const gcErr   = audit?.gc_with_errors || 0;
+
+            html += `
+                <div class="evidence-audit-block">
+                    <div class="evidence-audit-header">
+                        <div class="evidence-audit-info">
+                            <span class="evidence-order"><i class="fas fa-hashtag"></i> Orden: <strong>${order}</strong></span>
+                            <span class="evidence-meta"><i class="fas fa-calendar-alt"></i> ${date}</span>
+                            <span class="evidence-meta"><i class="fas fa-user"></i> ${auditor}</span>
+                            <span class="evidence-meta"><i class="fas fa-th"></i> Celda ${cell}</span>
+                            <span class="evidence-meta"><i class="fas fa-golf-ball"></i> ${gcErr} GC con errores</span>
+                        </div>
+                        <span class="evidence-img-count"><i class="fas fa-images"></i> ${imgs.length} imagen(es)</span>
+                    </div>
+                    <div class="evidence-img-grid">
+                        ${imgs.map(img => `
+                            <div class="evidence-img-thumb" onclick="auditApp.openLightbox('${img.image_url}')" title="Ver imagen">
+                                <img src="${img.image_url}" alt="Evidencia" loading="lazy">
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+        container.innerHTML = html;
+    }
+
     showLoading(show) {
         const el = document.getElementById('statsLoadingSpinner');
         if (el) el.style.display = show ? 'block' : 'none';
