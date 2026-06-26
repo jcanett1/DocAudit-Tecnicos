@@ -431,8 +431,9 @@ correctDateForTimezone(dateString) {
 
         if (!fileInput || !uploadArea) return;
 
-        // Clic en el área abre el selector de archivos
-        uploadArea.addEventListener('click', () => fileInput.click());
+        // NO agregar listener de click en uploadArea: el <label for="imageFileInput">
+        // ya se encarga de abrir el selector al hacer clic. Agregar otro listener
+        // provocaría que se abra dos veces.
 
         // Selección de archivos
         fileInput.addEventListener('change', (e) => {
