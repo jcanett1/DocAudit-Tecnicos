@@ -1164,6 +1164,29 @@ tbody tr:last-child td {
 .stat-purple { background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%); }
 .stat-teal   { background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%); }
 .stat-img    { background: linear-gradient(135deg, #e91e8c 0%, #ff6b9d 100%); }
+.stat-gold   { background: linear-gradient(135deg, #b7791f 0%, #f6c453 100%); }
+
+.golf-town-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.8rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(108, 117, 125, 0.12);
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.golf-town-count.is-active {
+    background: rgba(234, 179, 8, 0.2);
+    color: #8a5a00;
+    border: 1px solid rgba(234, 179, 8, 0.45);
+}
+
+.golf-town-summary {
+    margin-bottom: 0.85rem;
+}
 
 /* ===== Galería de Evidencias en Estadísticas ===== */
 .evidence-gallery-wrapper {

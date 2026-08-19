@@ -150,6 +150,14 @@
                             <option value="Carmen">Carmen</option>
                         </select>
                     </div>
+                    <div class="stats-filter-group">
+                        <label for="statsFilterGolfTown"><i class="fas fa-golf-ball"></i> GOLF TOWN:</label>
+                        <select id="statsFilterGolfTown">
+                            <option value="">Todas las órdenes</option>
+                            <option value="true">Solo GOLF TOWN</option>
+                            <option value="false">Sin GOLF TOWN</option>
+                        </select>
+                    </div>
                     <button id="loadStatsBtn" class="btn btn-primary">
                         <i class="fas fa-sync-alt"></i> Cargar Estadísticas
                     </button>
@@ -182,7 +190,14 @@
                         <div id="statsDailyTable" class="stats-table-wrapper"></div>
                     </div>
 
-                    <!-- 3. Órdenes repetidas -->
+                    <!-- 3. Auditorías GOLF TOWN -->
+                    <div class="stats-section">
+                        <h2 class="stats-section-title"><i class="fas fa-golf-ball"></i> Auditorías GOLF TOWN</h2>
+                        <p class="stats-section-subtitle">Listado de las auditorías marcadas como GOLF TOWN en el período seleccionado.</p>
+                        <div id="statsGolfTownTable" class="stats-table-wrapper"></div>
+                    </div>
+
+                    <!-- 4. Órdenes repetidas -->
                     <div class="stats-section">
                         <h2 class="stats-section-title"><i class="fas fa-copy"></i> Órdenes Repetidas</h2>
                         <div id="statsRepeatedOrders"></div>

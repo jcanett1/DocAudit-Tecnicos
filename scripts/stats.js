@@ -78,9 +78,10 @@ class StatsModule {
 
     // ── Cargar datos y renderizar todo ───────────────────────
     async loadAndRender() {
-        const fromVal    = document.getElementById('statsFilterFrom')?.value || '';
-        const toVal      = document.getElementById('statsFilterTo')?.value   || '';
-        const auditorVal = document.getElementById('statsFilterAuditor')?.value || '';
+        const fromVal      = document.getElementById('statsFilterFrom')?.value || '';
+        const toVal        = document.getElementById('statsFilterTo')?.value   || '';
+        const auditorVal   = document.getElementById('statsFilterAuditor')?.value || '';
+        const golfTownVal  = document.getElementById('statsFilterGolfTown')?.value || '';
 
         this.showLoading(true);
         this.showContent(false);
@@ -93,6 +94,9 @@ class StatsModule {
             if (fromVal)    params.append('audit_date', `gte.${fromVal}`);
             if (toVal)      params.append('audit_date', `lte.${toVal}`);
             if (auditorVal) params.append('checked_by', `eq.${auditorVal}`);
+            if (golfTownVal === 'true' || golfTownVal === 'false') {
+                params.append('golftow', `eq.${golfTownVal}`);
+            }
 
             const url = `${this.api.supabaseURL}/rest/v1/${this.api.tableName}?${params.toString()}`;
             const response = await fetch(url, {
@@ -154,8 +158,9 @@ class StatsModule {
 
     // ── Renderizar todo ──────────────────────────────────────
     renderAll() {
-        this.renderSummaryCards();       // incluye tarjeta de imágenes
+        this.renderSummaryCards();       // incluye tarjeta de imágenes y GOLF TOWN
         this.renderDailyTable();
+        this.renderGolfTownTable();
         this.renderRepeatedOrders();
         this.renderErrorClassification();
         this.renderTopErrorTypes();
@@ -178,7 +183,8 @@ class StatsModule {
         const pct         = total > 0 ? Math.round((withErrors / total) * 100) : 0;
         const totalGCErr  = this.data.reduce((s, a) => s + (parseInt(a.gc_with_errors) || 0), 0);
         const uniqueDates = new Set(this.data.map(a => a.audit_date).filter(Boolean)).size;
-        const totalImages = (this.imagesData || []).length;
+        const totalImages   = (this.imagesData || []).length;
+        const golfTownCount = this.data.filter(a => a.golftow === true).length;
 
         container.innerHTML = `
             <div class="stat-card stat-blue">
@@ -216,6 +222,11 @@ class StatsModule {
                 <div class="stat-value">${totalImages}</div>
                 <div class="stat-label">Imágenes de Evidencia</div>
             </div>
+            <div class="stat-card stat-gold">
+                <div class="stat-icon"><i class="fas fa-golf-ball"></i></div>
+                <div class="stat-value">${golfTownCount}</div>
+                <div class="stat-label">Registros GOLF TOWN</div>
+            </div>
         `;
     }
 
@@ -227,8 +238,9 @@ class StatsModule {
         const byDate = {};
         this.data.forEach(a => {
             const d = a.audit_date || 'Sin fecha';
-            if (!byDate[d]) byDate[d] = { total: 0, withErrors: 0, noErrors: 0, gcErrors: 0, orders: new Set() };
+            if (!byDate[d]) byDate[d] = { total: 0, withErrors: 0, noErrors: 0, gcErrors: 0, golfTown: 0, orders: new Set() };
             byDate[d].total++;
+            if (a.golftow === true) byDate[d].golfTown++;
             if (a.errors_found) byDate[d].withErrors++;
             else byDate[d].noErrors++;
             byDate[d].gcErrors += parseInt(a.gc_with_errors) || 0;
@@ -247,6 +259,7 @@ class StatsModule {
                     <tr>
                         <th>Fecha</th>
                         <th>Total Registros</th>
+                        <th>GOLF TOWN</th>
                         <th>Sin Errores</th>
                         <th>Con Errores</th>
                         <th>GC con Errores</th>
@@ -265,6 +278,7 @@ class StatsModule {
                 <tr>
                     <td><strong>${this.formatDateDisplay(date)}</strong></td>
                     <td class="text-center">${row.total}</td>
+                    <td class="text-center"><span class="golf-town-count ${row.golfTown > 0 ? 'is-active' : ''}">${row.golfTown}</span></td>
                     <td class="text-center text-green">${row.noErrors}</td>
                     <td class="text-center text-red">${row.withErrors}</td>
                     <td class="text-center">${row.gcErrors}</td>
@@ -278,7 +292,62 @@ class StatsModule {
         container.innerHTML = html;
     }
 
-    // ── 3. Órdenes repetidas ─────────────────────────────────
+    // ── 3. Auditorías GOLF TOWN ───────────────────────────────
+    renderGolfTownTable() {
+        const container = document.getElementById('statsGolfTownTable');
+        if (!container) return;
+
+        const golfTownAudits = this.data
+            .filter(a => a.golftow === true)
+            .sort((a, b) => (b.audit_date || '').localeCompare(a.audit_date || ''));
+
+        if (golfTownAudits.length === 0) {
+            container.innerHTML = `
+                <div class="no-repeated">
+                    <i class="fas fa-golf-ball" style="color:#b7791f;font-size:1.5rem;"></i>
+                    <span>No hay auditorías GOLF TOWN en el período seleccionado.</span>
+                </div>`;
+            return;
+        }
+
+        let html = `
+            <div class="golf-town-summary">
+                <span class="golf-town-badge">${golfTownAudits.length} registro(s) GOLF TOWN</span>
+            </div>
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Orden</th>
+                        <th>SH</th>
+                        <th>Auditor</th>
+                        <th>Celda</th>
+                        <th>QTY GC</th>
+                        <th>Errores</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        golfTownAudits.forEach(audit => {
+            html += `
+                <tr>
+                    <td>${this.formatDateDisplay(audit.audit_date)}</td>
+                    <td><strong>${audit.order_number || '-'}</strong></td>
+                    <td>${audit.sh || '-'}</td>
+                    <td>${audit.checked_by || '-'}</td>
+                    <td>${audit.build_cell || '-'}</td>
+                    <td class="text-center">${audit.qty_of_gc_in_order ?? '-'}</td>
+                    <td class="text-center"><span class="badge ${audit.errors_found ? 'badge-danger' : 'badge-success'}">${audit.errors_found ? 'Sí' : 'No'}</span></td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    // ── 4. Órdenes repetidas ─────────────────────────────────
     renderRepeatedOrders() {
         const container = document.getElementById('statsRepeatedOrders');
         if (!container) return;
@@ -326,7 +395,7 @@ class StatsModule {
             const cells    = [...new Set(records.map(r => r.build_cell).filter(Boolean))].join(', ');
             html += `
                 <tr>
-                    <td><strong>${order}</strong></td>
+                    <td><strong>${order}</strong> ${records.some(r => r.golftow === true) ? '<span class="golf-town-badge">GOLF TOWN</span>' : ''}</td>
                     <td class="text-center"><span class="badge-count">${records.length}x</span></td>
                     <td>${dates}</td>
                     <td>${auditors}</td>
@@ -349,7 +418,8 @@ class StatsModule {
             auditor:  a.checked_by || '-',
             cell:     a.build_cell || '-',
             gcErrors: parseInt(a.gc_with_errors) || 0,
-            total:    this.getTotalErrors(a)
+            total:    this.getTotalErrors(a),
+            isGolfTown: a.golftow === true
         }));
 
         const low    = classified.filter(r => r.total >= 1 && r.total <= 2);
@@ -390,7 +460,7 @@ class StatsModule {
         items.forEach(r => {
             html += `
                 <tr>
-                    <td><strong>${r.order}</strong></td>
+                    <td><strong>${r.order}</strong> ${r.isGolfTown ? '<span class="golf-town-badge">GOLF TOWN</span>' : ''}</td>
                     <td>${r.date}</td>
                     <td>${r.auditor}</td>
                     <td>${r.cell}</td>
@@ -866,7 +936,8 @@ class StatsModule {
             const user = a.checked_by || 'Sin asignar';
             const date = a.audit_date || 'Sin fecha';
             const key  = `${user}||${date}`;
-            if (!byUserDate[key]) byUserDate[key] = { user, date, ok: 0, err: 0, gcErrors: 0 };
+            if (!byUserDate[key]) byUserDate[key] = { user, date, ok: 0, err: 0, gcErrors: 0, golfTown: 0 };
+            if (a.golftow === true) byUserDate[key].golfTown++;
             if (a.errors_found) {
                 byUserDate[key].err++;
                 byUserDate[key].gcErrors += parseInt(a.gc_with_errors) || 0;
@@ -888,10 +959,11 @@ class StatsModule {
 
         const userTotals = {};
         rows.forEach(r => {
-            if (!userTotals[r.user]) userTotals[r.user] = { ok: 0, err: 0, gcErrors: 0 };
+            if (!userTotals[r.user]) userTotals[r.user] = { ok: 0, err: 0, gcErrors: 0, golfTown: 0 };
             userTotals[r.user].ok       += r.ok;
             userTotals[r.user].err      += r.err;
             userTotals[r.user].gcErrors += r.gcErrors;
+            userTotals[r.user].golfTown += r.golfTown;
         });
 
         let html = `
@@ -903,6 +975,7 @@ class StatsModule {
                         <th>Ingresos Sin Errores</th>
                         <th>Ingresos Con Errores</th>
                         <th>Total del Día</th>
+                        <th>GOLF TOWN</th>
                         <th>GC con Errores</th>
                         <th>% Error del Día</th>
                     </tr>
@@ -925,13 +998,14 @@ class StatsModule {
                     <td class="text-center text-green">${r.ok}</td>
                     <td class="text-center text-red">${r.err}</td>
                     <td class="text-center"><strong>${total}</strong></td>
+                    <td class="text-center"><span class="golf-town-count ${r.golfTown > 0 ? 'is-active' : ''}">${r.golfTown}</span></td>
                     <td class="text-center">${r.gcErrors}</td>
                     <td class="text-center"><span class="pct-badge ${pctClass}">${pct}%</span></td>
                 </tr>
             `;
         });
 
-        html += '<tr class="totals-separator"><td colspan="7"></td></tr>';
+        html += '<tr class="totals-separator"><td colspan="8"></td></tr>';
 
         Object.entries(userTotals).forEach(([user, t]) => {
             const total    = t.ok + t.err;
@@ -943,6 +1017,7 @@ class StatsModule {
                     <td class="text-center text-green"><strong>${t.ok}</strong></td>
                     <td class="text-center text-red"><strong>${t.err}</strong></td>
                     <td class="text-center"><strong>${total}</strong></td>
+                    <td class="text-center"><strong>${t.golfTown}</strong></td>
                     <td class="text-center"><strong>${t.gcErrors}</strong></td>
                     <td class="text-center"><span class="pct-badge ${pctClass}">${pct}%</span></td>
                 </tr>
@@ -996,7 +1071,7 @@ class StatsModule {
                 <div class="evidence-audit-block">
                     <div class="evidence-audit-header">
                         <div class="evidence-audit-info">
-                            <span class="evidence-order"><i class="fas fa-hashtag"></i> Orden: <strong>${order}</strong></span>
+                            <span class="evidence-order"><i class="fas fa-hashtag"></i> Orden: <strong>${order}</strong> ${audit?.golftow === true ? '<span class="golf-town-badge">GOLF TOWN</span>' : ''}</span>
                             <span class="evidence-meta"><i class="fas fa-calendar-alt"></i> ${date}</span>
                             <span class="evidence-meta"><i class="fas fa-user"></i> ${auditor}</span>
                             <span class="evidence-meta"><i class="fas fa-th"></i> Celda ${cell}</span>
