@@ -359,6 +359,7 @@ class AuditAPI {
             operadores: audit.operadores || '',
             order_number: audit.order_number || '',
             sh: audit.sh || '',
+            golftow: audit.golftow === true,
             qty_of_gc_in_order: audit.qty_of_gc_in_order || '',
             errors_found: audit.errors_found || false,
             gc_with_errors: audit.gc_with_errors || '',
@@ -482,6 +483,11 @@ class AuditAPI {
         data.operadores = formData.operadores;
         data.order_number = formData.order_number;
         data.sh = formData.sh;
+        data.golftow = formData.golftow === true ||
+                       formData.golftow === 'true' ||
+                       formData.golftow === 1 ||
+                       formData.golftow === '1' ||
+                       formData.golftow === 'on';
         data.qty_of_gc_in_order = formData.qty_of_gc_in_order ? parseInt(formData.qty_of_gc_in_order) : null;
         data.errors_found = formData.errors_found === true || 
                           formData.errors_found === 'true' || 

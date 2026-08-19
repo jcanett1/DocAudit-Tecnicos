@@ -266,7 +266,7 @@ correctDateForTimezone(dateString) {
                 <td>${audit.checked_by}</td>
                 <td>${audit.build_cell}</td>
                 <td>${audit.order_number || '-'}</td>
-                <td>${audit.sh || '-'}</td>
+                <td>${audit.sh || '-'} ${audit.golftow ? '<span class="golf-town-badge" title="Orden GOLF TOWN">GOLF TOWN</span>' : ''}</td>
                 <td>${audit.qty_of_gc_in_order || '-'}</td>
                 <td>
                     <span class="badge ${audit.errors_found ? 'badge-danger' : 'badge-success'}">
@@ -551,6 +551,11 @@ correctDateForTimezone(dateString) {
         if (checkbox) {
             data.errors_found = checkbox.checked;
         }
+
+        // Checkbox GOLF TOWN: siempre enviar un booleano para que la base de datos
+        // conserve explícitamente el estado marcado/desmarcado.
+        const golfTownCheckbox = form.querySelector('[name="golftow"]');
+        data.golftow = golfTownCheckbox ? golfTownCheckbox.checked : false;
         
         // Número - manejo especial para gc_with_errors
         const gcWithErrors = form.querySelector('[name="gc_with_errors"]');
@@ -768,7 +773,7 @@ async handleFormSubmit(e) {
                         </div>
                         <div class="view-field">
                             <span class="view-field-label">SH</span>
-                            <span class="view-field-value">${audit.sh || '-'}</span>
+                            <span class="view-field-value">${audit.sh || '-'} ${audit.golftow ? '<span class="golf-town-badge" title="Orden GOLF TOWN">GOLF TOWN</span>' : ''}</span>
                         </div>
                         <div class="view-field">
                             <span class="view-field-label">QTY of GC in Order</span>
@@ -1305,7 +1310,7 @@ async getStats() {
                     'Auditor': audit.checked_by,
                     'Celda': audit.build_cell,
                     'Orden': audit.order_number || 'N/A',
-                    'SH': audit.sh || 'N/A',
+                    'SH': audit.golftow ? `${audit.sh || 'N/A'} (GOLF TOWN)` : (audit.sh || 'N/A'),
                     'QTY GC': audit.qty_of_gc_in_order || 0,
                     'Errores Encontrados': audit.errors_found ? 'Sí' : 'No',
                     'GC con Errores': audit.gc_with_errors || 0,
@@ -1413,7 +1418,7 @@ async getStats() {
                     audit.checked_by,
                     audit.build_cell,
                     audit.order_number || 'N/A',
-                    audit.sh || 'N/A',
+                    audit.golftow ? `${audit.sh || 'N/A'} (GOLF TOWN)` : (audit.sh || 'N/A'),
                     (audit.qty_of_gc_in_order || 0).toString(),
                     audit.errors_found ? 'Sí' : 'No',
                     (audit.gc_with_errors || 0).toString(),

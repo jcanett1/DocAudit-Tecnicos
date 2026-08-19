@@ -248,6 +248,27 @@ tbody tr:last-child td {
     color: #ff9500;
 }
 
+/* Marca para órdenes GOLF TOWN */
+.golf-town-badge {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.35rem;
+    padding: 0.2rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(234, 179, 8, 0.16);
+    color: #8a5a00;
+    border: 1px solid rgba(234, 179, 8, 0.45);
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.golf-town-group {
+    margin-top: 0.25rem;
+}
+
 /* Acciones en tabla */
 .action-buttons {
     display: flex;
