@@ -173,11 +173,14 @@ class ReportsModule {
             const pct        = total > 0 ? Math.round((withErrors / total) * 100) : 0;
             const totalGC    = data.reduce((s, a) => s + (parseInt(a.gc_with_errors) || 0), 0);
             const uniqueDates = new Set(data.map(a => a.audit_date).filter(Boolean)).size;
+            const golfTownCount = data.filter(a => a.golftow === true).length;
+            const pgaCount = data.filter(a => a.pga === true).length;
 
             const summaryData = [
                 ['Total Registros', total, 'Sin Errores', noErrors],
                 ['Con Errores', withErrors, '% Con Errores', `${pct}%`],
                 ['Total GC con Errores', totalGC, 'Días con Registros', uniqueDates],
+                ['Registros GOLF TOWN', golfTownCount, 'Registros PGA', pgaCount],
             ];
 
             doc.autoTable({
@@ -204,8 +207,10 @@ class ReportsModule {
             const byDate = {};
             data.forEach(a => {
                 const d = a.audit_date || 'Sin fecha';
-                if (!byDate[d]) byDate[d] = { total: 0, ok: 0, err: 0, gc: 0, orders: new Set() };
+                if (!byDate[d]) byDate[d] = { total: 0, ok: 0, err: 0, gc: 0, golfTown: 0, pga: 0, orders: new Set() };
                 byDate[d].total++;
+                if (a.golftow === true) byDate[d].golfTown++;
+                if (a.pga === true) byDate[d].pga++;
                 if (a.errors_found) { byDate[d].err++; byDate[d].gc += parseInt(a.gc_with_errors) || 0; }
                 else byDate[d].ok++;
                 if (a.order_number) byDate[d].orders.add(a.order_number);
@@ -214,22 +219,23 @@ class ReportsModule {
             const dailyRows = Object.keys(byDate).sort().map(d => {
                 const r = byDate[d];
                 const p = r.total > 0 ? Math.round((r.err / r.total) * 100) : 0;
-                return [this.formatDate(d), r.total, r.ok, r.err, r.gc, r.orders.size, `${p}%`];
+                return [this.formatDate(d), r.total, r.golfTown, r.pga, r.ok, r.err, r.gc, r.orders.size, `${p}%`];
             });
 
             doc.autoTable({
                 startY: y,
-                head: [['Fecha', 'Total', 'Sin Errores', 'Con Errores', 'GC Errores', 'Órdenes Únicas', '% Error']],
+                head: [['Fecha', 'Total', 'GOLF TOWN', 'PGA', 'Sin Errores', 'Con Errores', 'GC Errores', 'Órdenes Únicas', '% Error']],
                 body: dailyRows,
                 theme: 'striped',
                 headStyles: { fillColor: this.BRAND_COLOR, fontSize: 8, fontStyle: 'bold' },
                 styles: { fontSize: 8, cellPadding: 2.5 },
                 columnStyles: {
                     0: { fontStyle: 'bold' },
-                    1: { halign: 'center' }, 2: { halign: 'center', textColor: this.GREEN_COLOR },
-                    3: { halign: 'center', textColor: this.RED_COLOR },
-                    4: { halign: 'center' }, 5: { halign: 'center' },
-                    6: { halign: 'center', fontStyle: 'bold' },
+                    1: { halign: 'center' }, 2: { halign: 'center' }, 3: { halign: 'center' },
+                    4: { halign: 'center', textColor: this.GREEN_COLOR },
+                    5: { halign: 'center', textColor: this.RED_COLOR },
+                    6: { halign: 'center' }, 7: { halign: 'center' },
+                    8: { halign: 'center', fontStyle: 'bold' },
                 },
                 margin: { left: 14, right: 14 },
             });
@@ -334,7 +340,9 @@ class ReportsModule {
             const byUser = {};
             data.forEach(a => {
                 const u = a.checked_by || 'Sin asignar';
-                if (!byUser[u]) byUser[u] = { ok: 0, err: 0, gc: 0 };
+                if (!byUser[u]) byUser[u] = { ok: 0, err: 0, gc: 0, golfTown: 0, pga: 0 };
+                if (a.golftow === true) byUser[u].golfTown++;
+                if (a.pga === true) byUser[u].pga++;
                 if (a.errors_found) { byUser[u].err++; byUser[u].gc += parseInt(a.gc_with_errors) || 0; }
                 else byUser[u].ok++;
             });
@@ -342,12 +350,12 @@ class ReportsModule {
             const userRows = Object.entries(byUser).sort().map(([u, r]) => {
                 const total = r.ok + r.err;
                 const pct   = total > 0 ? Math.round((r.err / total) * 100) : 0;
-                return [u, total, r.ok, r.err, r.gc, `${pct}%`];
+                return [u, total, r.ok, r.err, r.golfTown, r.pga, r.gc, `${pct}%`];
             });
 
             doc.autoTable({
                 startY: y,
-                head: [['Auditor', 'Total', 'Sin Errores', 'Con Errores', 'GC Errores', '% Error']],
+                head: [['Auditor', 'Total', 'Sin Errores', 'Con Errores', 'GOLF TOWN', 'PGA', 'GC Errores', '% Error']],
                 body: userRows,
                 theme: 'striped',
                 headStyles: { fillColor: this.BRAND_COLOR, fontSize: 8, fontStyle: 'bold' },
@@ -358,7 +366,9 @@ class ReportsModule {
                     2: { halign: 'center', textColor: this.GREEN_COLOR },
                     3: { halign: 'center', textColor: this.RED_COLOR },
                     4: { halign: 'center' },
-                    5: { halign: 'center', fontStyle: 'bold' },
+                    5: { halign: 'center' },
+                    6: { halign: 'center' },
+                    7: { halign: 'center', fontStyle: 'bold' },
                 },
                 margin: { left: 14, right: 14 },
             });

@@ -266,7 +266,7 @@ correctDateForTimezone(dateString) {
                 <td>${audit.checked_by}</td>
                 <td>${audit.build_cell}</td>
                 <td>${audit.order_number || '-'}</td>
-                <td>${audit.sh || '-'} ${audit.golftow ? '<span class="golf-town-badge" title="Orden GOLF TOWN">GOLF TOWN</span>' : ''}</td>
+                <td>${audit.sh || '-'} ${audit.golftow ? '<span class="golf-town-badge" title="Orden GOLF TOWN">GOLF TOWN</span>' : ''} ${audit.pga ? '<span class="pga-badge" title="Orden PGA">PGA</span>' : ''}</td>
                 <td>${audit.qty_of_gc_in_order || '-'}</td>
                 <td>
                     <span class="badge ${audit.errors_found ? 'badge-danger' : 'badge-success'}">
@@ -556,6 +556,11 @@ correctDateForTimezone(dateString) {
         // conserve explícitamente el estado marcado/desmarcado.
         const golfTownCheckbox = form.querySelector('[name="golftow"]');
         data.golftow = golfTownCheckbox ? golfTownCheckbox.checked : false;
+
+        // Checkbox PGA: siempre enviar un booleano para conservar explícitamente
+        // el estado marcado/desmarcado en Supabase.
+        const pgaCheckbox = form.querySelector('[name="pga"]');
+        data.pga = pgaCheckbox ? pgaCheckbox.checked : false;
         
         // Número - manejo especial para gc_with_errors
         const gcWithErrors = form.querySelector('[name="gc_with_errors"]');
@@ -773,7 +778,7 @@ async handleFormSubmit(e) {
                         </div>
                         <div class="view-field">
                             <span class="view-field-label">SH</span>
-                            <span class="view-field-value">${audit.sh || '-'} ${audit.golftow ? '<span class="golf-town-badge" title="Orden GOLF TOWN">GOLF TOWN</span>' : ''}</span>
+                            <span class="view-field-value">${audit.sh || '-'} ${audit.golftow ? '<span class="golf-town-badge" title="Orden GOLF TOWN">GOLF TOWN</span>' : ''} ${audit.pga ? '<span class="pga-badge" title="Orden PGA">PGA</span>' : ''}</span>
                         </div>
                         <div class="view-field">
                             <span class="view-field-label">QTY of GC in Order</span>
@@ -1310,7 +1315,9 @@ async getStats() {
                     'Auditor': audit.checked_by,
                     'Celda': audit.build_cell,
                     'Orden': audit.order_number || 'N/A',
-                    'SH': audit.golftow ? `${audit.sh || 'N/A'} (GOLF TOWN)` : (audit.sh || 'N/A'),
+                    'SH': `${audit.sh || 'N/A'}${audit.golftow ? ' (GOLF TOWN)' : ''}${audit.pga ? ' (PGA)' : ''}`,
+                    'GOLF TOWN': audit.golftow ? 'Sí' : 'No',
+                    'PGA': audit.pga ? 'Sí' : 'No',
                     'QTY GC': audit.qty_of_gc_in_order || 0,
                     'Errores Encontrados': audit.errors_found ? 'Sí' : 'No',
                     'GC con Errores': audit.gc_with_errors || 0,
@@ -1335,6 +1342,8 @@ async getStats() {
                 { wch: 8 },   // Celda
                 { wch: 12 },  // Orden
                 { wch: 8 },   // SH
+                { wch: 12 },  // GOLF TOWN
+                { wch: 8 },   // PGA
                 { wch: 10 },  // QTY GC
                 { wch: 12 },  // Errores
                 { wch: 12 },  // GC con errores
@@ -1418,7 +1427,9 @@ async getStats() {
                     audit.checked_by,
                     audit.build_cell,
                     audit.order_number || 'N/A',
-                    audit.golftow ? `${audit.sh || 'N/A'} (GOLF TOWN)` : (audit.sh || 'N/A'),
+                    `${audit.sh || 'N/A'}${audit.golftow ? ' (GOLF TOWN)' : ''}${audit.pga ? ' (PGA)' : ''}`,
+                    audit.golftow ? 'Sí' : 'No',
+                    audit.pga ? 'Sí' : 'No',
                     (audit.qty_of_gc_in_order || 0).toString(),
                     audit.errors_found ? 'Sí' : 'No',
                     (audit.gc_with_errors || 0).toString(),
@@ -1427,7 +1438,7 @@ async getStats() {
             });
             
             // Configurar tabla
-            const tableHeaders = ['N°', 'Fecha', 'Auditor', 'Celda', 'Orden', 'SH', 'QTY GC', 'Errores', 'GC Errores', 'Total Err'];
+            const tableHeaders = ['N°', 'Fecha', 'Auditor', 'Celda', 'Orden', 'SH', 'GOLF TOWN', 'PGA', 'QTY GC', 'Errores', 'GC Errores', 'Total Err'];
             
             // Generar tabla
             doc.autoTable({

@@ -360,6 +360,7 @@ class AuditAPI {
             order_number: audit.order_number || '',
             sh: audit.sh || '',
             golftow: audit.golftow === true,
+            pga: audit.pga === true,
             qty_of_gc_in_order: audit.qty_of_gc_in_order || '',
             errors_found: audit.errors_found || false,
             gc_with_errors: audit.gc_with_errors || '',
@@ -488,6 +489,11 @@ class AuditAPI {
                        formData.golftow === 1 ||
                        formData.golftow === '1' ||
                        formData.golftow === 'on';
+        data.pga = formData.pga === true ||
+                   formData.pga === 'true' ||
+                   formData.pga === 1 ||
+                   formData.pga === '1' ||
+                   formData.pga === 'on';
         data.qty_of_gc_in_order = formData.qty_of_gc_in_order ? parseInt(formData.qty_of_gc_in_order) : null;
         data.errors_found = formData.errors_found === true || 
                           formData.errors_found === 'true' || 

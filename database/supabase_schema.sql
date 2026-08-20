@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS public.dotaudit (
     order_number VARCHAR(50),
     sh VARCHAR(20),
     golftow BOOLEAN NOT NULL DEFAULT FALSE,
+    pga BOOLEAN NOT NULL DEFAULT FALSE,
     qty_of_gc_in_order INTEGER,
     errors_found BOOLEAN NOT NULL,
     gc_with_errors INTEGER,
@@ -80,6 +81,7 @@ COMMENT ON COLUMN public.dotaudit.audit_date IS 'Fecha de la auditoría';
 COMMENT ON COLUMN public.dotaudit.build_cell IS 'Número de celda donde se construyó el equipo';
 COMMENT ON COLUMN public.dotaudit.errors_found IS 'Indica si se encontraron errores';
 COMMENT ON COLUMN public.dotaudit.golftow IS 'Indica si la orden corresponde a GOLF TOWN';
+COMMENT ON COLUMN public.dotaudit.pga IS 'Indica si la orden corresponde a PGA';
 COMMENT ON COLUMN public.dotaudit.gc_with_errors IS 'Cantidad de palos de golf con errores';
 COMMENT ON COLUMN public.dotaudit.notes IS 'Notas adicionales sobre la auditoría';
 

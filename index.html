@@ -158,6 +158,14 @@
                             <option value="false">Sin GOLF TOWN</option>
                         </select>
                     </div>
+                    <div class="stats-filter-group">
+                        <label for="statsFilterPga"><i class="fas fa-trophy"></i> PGA:</label>
+                        <select id="statsFilterPga">
+                            <option value="">Todas las órdenes</option>
+                            <option value="true">Solo PGA</option>
+                            <option value="false">Sin PGA</option>
+                        </select>
+                    </div>
                     <button id="loadStatsBtn" class="btn btn-primary">
                         <i class="fas fa-sync-alt"></i> Cargar Estadísticas
                     </button>
@@ -197,7 +205,14 @@
                         <div id="statsGolfTownTable" class="stats-table-wrapper"></div>
                     </div>
 
-                    <!-- 4. Órdenes repetidas -->
+                    <!-- 4. Auditorías PGA -->
+                    <div class="stats-section">
+                        <h2 class="stats-section-title"><i class="fas fa-trophy"></i> Auditorías PGA</h2>
+                        <p class="stats-section-subtitle">Listado de las auditorías marcadas como PGA en el período seleccionado.</p>
+                        <div id="statsPgaTable" class="stats-table-wrapper"></div>
+                    </div>
+
+                    <!-- 5. Órdenes repetidas -->
                     <div class="stats-section">
                         <h2 class="stats-section-title"><i class="fas fa-copy"></i> Órdenes Repetidas</h2>
                         <div id="statsRepeatedOrders"></div>
@@ -376,6 +391,13 @@
                             <label class="checkbox-label" for="golftow">
                                 <input type="checkbox" id="golftow" name="golftow">
                                 <span>GOLF TOWN</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group checkbox-group pga-group">
+                            <label class="checkbox-label" for="pga">
+                                <input type="checkbox" id="pga" name="pga">
+                                <span>PGA</span>
                             </label>
                         </div>
                         
