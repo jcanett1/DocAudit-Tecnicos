@@ -105,6 +105,9 @@ Una aplicación web completa para gestionar auditorías de equipos de golf con f
 | `operadores` | VARCHAR(100) | | Nombres de operadores |
 | `order_number` | VARCHAR(50) | | Número de orden |
 | `sh` | VARCHAR(20) | | Código SH |
+| `golftow` | BOOLEAN | NOT NULL, valor por defecto `false` | ¿La orden corresponde a GOLF TOWN? |
+| `pga` | BOOLEAN | NOT NULL, valor por defecto `false` | ¿La orden corresponde a PGA? |
+| `amazon` | BOOLEAN | NOT NULL, valor por defecto `false` | ¿La orden corresponde a Amazon? |
 | `qty_of_gc_in_order` | INTEGER | | Cantidad de GC en orden |
 | `errors_found` | BOOLEAN | NOT NULL | ¿Se encontraron errores? |
 | `gc_with_errors` | INTEGER | | GC con errores |
@@ -148,7 +151,7 @@ Una aplicación web completa para gestionar auditorías de equipos de golf con f
 
 ### Estadísticas
 
-- `GET /api/stats` - Obtener estadísticas del último mes
+- `GET /api/stats` - Obtener estadísticas del último mes. La interfaz incluye filtros y conteos separados para GOLF TOWN, PGA y Amazon.
 
 ### Sistema
 

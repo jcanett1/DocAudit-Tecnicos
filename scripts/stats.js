@@ -83,6 +83,7 @@ class StatsModule {
         const auditorVal   = document.getElementById('statsFilterAuditor')?.value || '';
         const golfTownVal  = document.getElementById('statsFilterGolfTown')?.value || '';
         const pgaVal        = document.getElementById('statsFilterPga')?.value || '';
+        const amazonVal     = document.getElementById('statsFilterAmazon')?.value || '';
 
         this.showLoading(true);
         this.showContent(false);
@@ -100,6 +101,9 @@ class StatsModule {
             }
             if (pgaVal === 'true' || pgaVal === 'false') {
                 params.append('pga', `eq.${pgaVal}`);
+            }
+            if (amazonVal === 'true' || amazonVal === 'false') {
+                params.append('amazon', `eq.${amazonVal}`);
             }
 
             const url = `${this.api.supabaseURL}/rest/v1/${this.api.tableName}?${params.toString()}`;
@@ -166,6 +170,7 @@ class StatsModule {
         this.renderDailyTable();
         this.renderGolfTownTable();
         this.renderPgaTable();
+        this.renderAmazonTable();
         this.renderRepeatedOrders();
         this.renderErrorClassification();
         this.renderTopErrorTypes();
@@ -191,6 +196,7 @@ class StatsModule {
         const totalImages   = (this.imagesData || []).length;
         const golfTownCount = this.data.filter(a => a.golftow === true).length;
         const pgaCount       = this.data.filter(a => a.pga === true).length;
+        const amazonCount    = this.data.filter(a => a.amazon === true).length;
 
         container.innerHTML = `
             <div class="stat-card stat-blue">
@@ -238,6 +244,11 @@ class StatsModule {
                 <div class="stat-value">${pgaCount}</div>
                 <div class="stat-label">Registros PGA</div>
             </div>
+            <div class="stat-card stat-amazon">
+                <div class="stat-icon"><i class="fab fa-amazon"></i></div>
+                <div class="stat-value">${amazonCount}</div>
+                <div class="stat-label">Registros Amazon</div>
+            </div>
         `;
     }
 
@@ -249,10 +260,11 @@ class StatsModule {
         const byDate = {};
         this.data.forEach(a => {
             const d = a.audit_date || 'Sin fecha';
-            if (!byDate[d]) byDate[d] = { total: 0, withErrors: 0, noErrors: 0, gcErrors: 0, golfTown: 0, pga: 0, orders: new Set() };
+            if (!byDate[d]) byDate[d] = { total: 0, withErrors: 0, noErrors: 0, gcErrors: 0, golfTown: 0, pga: 0, amazon: 0, orders: new Set() };
             byDate[d].total++;
             if (a.golftow === true) byDate[d].golfTown++;
             if (a.pga === true) byDate[d].pga++;
+            if (a.amazon === true) byDate[d].amazon++;
             if (a.errors_found) byDate[d].withErrors++;
             else byDate[d].noErrors++;
             byDate[d].gcErrors += parseInt(a.gc_with_errors) || 0;
@@ -273,6 +285,7 @@ class StatsModule {
                         <th>Total Registros</th>
                         <th>GOLF TOWN</th>
                         <th>PGA</th>
+                        <th>Amazon</th>
                         <th>Sin Errores</th>
                         <th>Con Errores</th>
                         <th>GC con Errores</th>
@@ -293,6 +306,7 @@ class StatsModule {
                     <td class="text-center">${row.total}</td>
                     <td class="text-center"><span class="golf-town-count ${row.golfTown > 0 ? 'is-active' : ''}">${row.golfTown}</span></td>
                     <td class="text-center"><span class="pga-count ${row.pga > 0 ? 'is-active' : ''}">${row.pga}</span></td>
+                    <td class="text-center"><span class="amazon-count ${row.amazon > 0 ? 'is-active' : ''}">${row.amazon}</span></td>
                     <td class="text-center text-green">${row.noErrors}</td>
                     <td class="text-center text-red">${row.withErrors}</td>
                     <td class="text-center">${row.gcErrors}</td>
@@ -416,7 +430,62 @@ class StatsModule {
         container.innerHTML = html;
     }
 
-    // ── 5. Órdenes repetidas ─────────────────────────────────
+    // ── 5. Auditorías Amazon ───────────────────────────────────
+    renderAmazonTable() {
+        const container = document.getElementById('statsAmazonTable');
+        if (!container) return;
+
+        const amazonAudits = this.data
+            .filter(a => a.amazon === true)
+            .sort((a, b) => (b.audit_date || '').localeCompare(a.audit_date || ''));
+
+        if (amazonAudits.length === 0) {
+            container.innerHTML = `
+                <div class="no-repeated">
+                    <i class="fab fa-amazon" style="color:#c2410c;font-size:1.5rem;"></i>
+                    <span>No hay auditorías Amazon en el período seleccionado.</span>
+                </div>`;
+            return;
+        }
+
+        let html = `
+            <div class="amazon-summary">
+                <span class="amazon-badge">${amazonAudits.length} registro(s) Amazon</span>
+            </div>
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Orden</th>
+                        <th>SH</th>
+                        <th>Auditor</th>
+                        <th>Celda</th>
+                        <th>QTY GC</th>
+                        <th>Errores</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        amazonAudits.forEach(audit => {
+            html += `
+                <tr>
+                    <td>${this.formatDateDisplay(audit.audit_date)}</td>
+                    <td><strong>${audit.order_number || '-'}</strong></td>
+                    <td>${audit.sh || '-'}</td>
+                    <td>${audit.checked_by || '-'}</td>
+                    <td>${audit.build_cell || '-'}</td>
+                    <td class="text-center">${audit.qty_of_gc_in_order ?? '-'}</td>
+                    <td class="text-center"><span class="badge ${audit.errors_found ? 'badge-danger' : 'badge-success'}">${audit.errors_found ? 'Sí' : 'No'}</span></td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    // ── 6. Órdenes repetidas ─────────────────────────────────
     renderRepeatedOrders() {
         const container = document.getElementById('statsRepeatedOrders');
         if (!container) return;
@@ -464,7 +533,7 @@ class StatsModule {
             const cells    = [...new Set(records.map(r => r.build_cell).filter(Boolean))].join(', ');
             html += `
                 <tr>
-                    <td><strong>${order}</strong> ${records.some(r => r.golftow === true) ? '<span class="golf-town-badge">GOLF TOWN</span>' : ''} ${records.some(r => r.pga === true) ? '<span class="pga-badge">PGA</span>' : ''}</td>
+                    <td><strong>${order}</strong> ${records.some(r => r.golftow === true) ? '<span class="golf-town-badge">GOLF TOWN</span>' : ''} ${records.some(r => r.pga === true) ? '<span class="pga-badge">PGA</span>' : ''} ${records.some(r => r.amazon === true) ? '<span class="amazon-badge">Amazon</span>' : ''}</td>
                     <td class="text-center"><span class="badge-count">${records.length}x</span></td>
                     <td>${dates}</td>
                     <td>${auditors}</td>
@@ -489,7 +558,8 @@ class StatsModule {
             gcErrors: parseInt(a.gc_with_errors) || 0,
             total:    this.getTotalErrors(a),
             isGolfTown: a.golftow === true,
-            isPga:      a.pga === true
+            isPga:      a.pga === true,
+            isAmazon:   a.amazon === true
         }));
 
         const low    = classified.filter(r => r.total >= 1 && r.total <= 2);
@@ -530,7 +600,7 @@ class StatsModule {
         items.forEach(r => {
             html += `
                 <tr>
-                    <td><strong>${r.order}</strong> ${r.isGolfTown ? '<span class="golf-town-badge">GOLF TOWN</span>' : ''} ${r.isPga ? '<span class="pga-badge">PGA</span>' : ''}</td>
+                    <td><strong>${r.order}</strong> ${r.isGolfTown ? '<span class="golf-town-badge">GOLF TOWN</span>' : ''} ${r.isPga ? '<span class="pga-badge">PGA</span>' : ''} ${r.isAmazon ? '<span class="amazon-badge">Amazon</span>' : ''}</td>
                     <td>${r.date}</td>
                     <td>${r.auditor}</td>
                     <td>${r.cell}</td>
@@ -1006,9 +1076,10 @@ class StatsModule {
             const user = a.checked_by || 'Sin asignar';
             const date = a.audit_date || 'Sin fecha';
             const key  = `${user}||${date}`;
-            if (!byUserDate[key]) byUserDate[key] = { user, date, ok: 0, err: 0, gcErrors: 0, golfTown: 0, pga: 0 };
+            if (!byUserDate[key]) byUserDate[key] = { user, date, ok: 0, err: 0, gcErrors: 0, golfTown: 0, pga: 0, amazon: 0 };
             if (a.golftow === true) byUserDate[key].golfTown++;
             if (a.pga === true) byUserDate[key].pga++;
+            if (a.amazon === true) byUserDate[key].amazon++;
             if (a.errors_found) {
                 byUserDate[key].err++;
                 byUserDate[key].gcErrors += parseInt(a.gc_with_errors) || 0;
@@ -1030,12 +1101,13 @@ class StatsModule {
 
         const userTotals = {};
         rows.forEach(r => {
-            if (!userTotals[r.user]) userTotals[r.user] = { ok: 0, err: 0, gcErrors: 0, golfTown: 0, pga: 0 };
+            if (!userTotals[r.user]) userTotals[r.user] = { ok: 0, err: 0, gcErrors: 0, golfTown: 0, pga: 0, amazon: 0 };
             userTotals[r.user].ok       += r.ok;
             userTotals[r.user].err      += r.err;
             userTotals[r.user].gcErrors += r.gcErrors;
             userTotals[r.user].golfTown += r.golfTown;
             userTotals[r.user].pga       += r.pga;
+            userTotals[r.user].amazon    += r.amazon;
         });
 
         let html = `
@@ -1049,6 +1121,7 @@ class StatsModule {
                         <th>Total del Día</th>
                         <th>GOLF TOWN</th>
                         <th>PGA</th>
+                        <th>Amazon</th>
                         <th>GC con Errores</th>
                         <th>% Error del Día</th>
                     </tr>
@@ -1073,13 +1146,14 @@ class StatsModule {
                     <td class="text-center"><strong>${total}</strong></td>
                     <td class="text-center"><span class="golf-town-count ${r.golfTown > 0 ? 'is-active' : ''}">${r.golfTown}</span></td>
                     <td class="text-center"><span class="pga-count ${r.pga > 0 ? 'is-active' : ''}">${r.pga}</span></td>
+                    <td class="text-center"><span class="amazon-count ${r.amazon > 0 ? 'is-active' : ''}">${r.amazon}</span></td>
                     <td class="text-center">${r.gcErrors}</td>
                     <td class="text-center"><span class="pct-badge ${pctClass}">${pct}%</span></td>
                 </tr>
             `;
         });
 
-            html += '<tr class="totals-separator"><td colspan="9"></td></tr>';
+            html += '<tr class="totals-separator"><td colspan="10"></td></tr>';
 
         Object.entries(userTotals).forEach(([user, t]) => {
             const total    = t.ok + t.err;
@@ -1093,6 +1167,7 @@ class StatsModule {
                     <td class="text-center"><strong>${total}</strong></td>
                     <td class="text-center"><strong>${t.golfTown}</strong></td>
                     <td class="text-center"><strong>${t.pga}</strong></td>
+                    <td class="text-center"><strong>${t.amazon}</strong></td>
                     <td class="text-center"><strong>${t.gcErrors}</strong></td>
                     <td class="text-center"><span class="pct-badge ${pctClass}">${pct}%</span></td>
                 </tr>
@@ -1146,7 +1221,7 @@ class StatsModule {
                 <div class="evidence-audit-block">
                     <div class="evidence-audit-header">
                         <div class="evidence-audit-info">
-                            <span class="evidence-order"><i class="fas fa-hashtag"></i> Orden: <strong>${order}</strong> ${audit?.golftow === true ? '<span class="golf-town-badge">GOLF TOWN</span>' : ''} ${audit?.pga === true ? '<span class="pga-badge">PGA</span>' : ''}</span>
+                            <span class="evidence-order"><i class="fas fa-hashtag"></i> Orden: <strong>${order}</strong> ${audit?.golftow === true ? '<span class="golf-town-badge">GOLF TOWN</span>' : ''} ${audit?.pga === true ? '<span class="pga-badge">PGA</span>' : ''} ${audit?.amazon === true ? '<span class="amazon-badge">Amazon</span>' : ''}</span>
                             <span class="evidence-meta"><i class="fas fa-calendar-alt"></i> ${date}</span>
                             <span class="evidence-meta"><i class="fas fa-user"></i> ${auditor}</span>
                             <span class="evidence-meta"><i class="fas fa-th"></i> Celda ${cell}</span>

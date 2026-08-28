@@ -73,6 +73,7 @@ audit-golf-app/
 - ✅ **Operadores**: Campo de texto
 - ✅ **Order Number**: Campo de texto
 - ✅ **SH**: Campo de texto
+- ✅ **Tipo de orden**: GOLF TOWN, PGA y Amazon
 - ✅ **QTY of GC in order**: Campo numérico
 
 ### Errores
@@ -201,9 +202,10 @@ GET    /health              # Health check
 - ✅ Total de auditorías
 - ✅ Auditorías con errores
 - ✅ Porcentaje de errores
-- ✅ Distribución por auditor
-- ✅ Distribución por celda
-- ✅ Período del último mes
+- ✅ **Distribución por auditor**
+- ✅ **Distribución por celda**
+- ✅ **Conteo y listado separado de órdenes GOLF TOWN, PGA y Amazon**
+- ✅ **Período del último mes**
 
 ## 🌍 Despliegue
 

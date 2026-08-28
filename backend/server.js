@@ -247,6 +247,7 @@ app.get('/api/stats', async (req, res) => {
     const totalAudits = data?.length || 0;
     const auditsWithErrors = data?.filter(audit => audit.errors_found).length || 0;
     const totalErrors = data?.reduce((sum, audit) => sum + (audit.gc_with_errors || 0), 0) || 0;
+    const amazonCount = data?.filter(audit => audit.amazon === true).length || 0;
 
     const statsByAuditor = data?.reduce((acc, audit) => {
       acc[audit.checked_by] = (acc[audit.checked_by] || 0) + 1;
@@ -264,6 +265,7 @@ app.get('/api/stats', async (req, res) => {
         totalAudits,
         auditsWithErrors,
         totalErrors,
+        amazonCount,
         auditsWithErrorsPercentage: totalAudits > 0 ? Math.round((auditsWithErrors / totalAudits) * 100) : 0,
         statsByAuditor,
         statsByCell,

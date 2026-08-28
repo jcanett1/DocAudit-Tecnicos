@@ -266,7 +266,7 @@ correctDateForTimezone(dateString) {
                 <td>${audit.checked_by}</td>
                 <td>${audit.build_cell}</td>
                 <td>${audit.order_number || '-'}</td>
-                <td>${audit.sh || '-'} ${audit.golftow ? '<span class="golf-town-badge" title="Orden GOLF TOWN">GOLF TOWN</span>' : ''} ${audit.pga ? '<span class="pga-badge" title="Orden PGA">PGA</span>' : ''}</td>
+                <td>${audit.sh || '-'} ${audit.golftow ? '<span class="golf-town-badge" title="Orden GOLF TOWN">GOLF TOWN</span>' : ''} ${audit.pga ? '<span class="pga-badge" title="Orden PGA">PGA</span>' : ''} ${audit.amazon ? '<span class="amazon-badge" title="Orden Amazon">Amazon</span>' : ''}</td>
                 <td>${audit.qty_of_gc_in_order || '-'}</td>
                 <td>
                     <span class="badge ${audit.errors_found ? 'badge-danger' : 'badge-success'}">
@@ -561,6 +561,11 @@ correctDateForTimezone(dateString) {
         // el estado marcado/desmarcado en Supabase.
         const pgaCheckbox = form.querySelector('[name="pga"]');
         data.pga = pgaCheckbox ? pgaCheckbox.checked : false;
+
+        // Checkbox Amazon: siempre enviar un booleano para conservar explícitamente
+        // el estado marcado/desmarcado en Supabase.
+        const amazonCheckbox = form.querySelector('[name="amazon"]');
+        data.amazon = amazonCheckbox ? amazonCheckbox.checked : false;
         
         // Número - manejo especial para gc_with_errors
         const gcWithErrors = form.querySelector('[name="gc_with_errors"]');
@@ -778,7 +783,7 @@ async handleFormSubmit(e) {
                         </div>
                         <div class="view-field">
                             <span class="view-field-label">SH</span>
-                            <span class="view-field-value">${audit.sh || '-'} ${audit.golftow ? '<span class="golf-town-badge" title="Orden GOLF TOWN">GOLF TOWN</span>' : ''} ${audit.pga ? '<span class="pga-badge" title="Orden PGA">PGA</span>' : ''}</span>
+                            <span class="view-field-value">${audit.sh || '-'} ${audit.golftow ? '<span class="golf-town-badge" title="Orden GOLF TOWN">GOLF TOWN</span>' : ''} ${audit.pga ? '<span class="pga-badge" title="Orden PGA">PGA</span>' : ''} ${audit.amazon ? '<span class="amazon-badge" title="Orden Amazon">Amazon</span>' : ''}</span>
                         </div>
                         <div class="view-field">
                             <span class="view-field-label">QTY of GC in Order</span>
@@ -1315,9 +1320,10 @@ async getStats() {
                     'Auditor': audit.checked_by,
                     'Celda': audit.build_cell,
                     'Orden': audit.order_number || 'N/A',
-                    'SH': `${audit.sh || 'N/A'}${audit.golftow ? ' (GOLF TOWN)' : ''}${audit.pga ? ' (PGA)' : ''}`,
+                    'SH': `${audit.sh || 'N/A'}${audit.golftow ? ' (GOLF TOWN)' : ''}${audit.pga ? ' (PGA)' : ''}${audit.amazon ? ' (Amazon)' : ''}`,
                     'GOLF TOWN': audit.golftow ? 'Sí' : 'No',
                     'PGA': audit.pga ? 'Sí' : 'No',
+                    'Amazon': audit.amazon ? 'Sí' : 'No',
                     'QTY GC': audit.qty_of_gc_in_order || 0,
                     'Errores Encontrados': audit.errors_found ? 'Sí' : 'No',
                     'GC con Errores': audit.gc_with_errors || 0,
@@ -1344,6 +1350,7 @@ async getStats() {
                 { wch: 8 },   // SH
                 { wch: 12 },  // GOLF TOWN
                 { wch: 8 },   // PGA
+                { wch: 10 },  // Amazon
                 { wch: 10 },  // QTY GC
                 { wch: 12 },  // Errores
                 { wch: 12 },  // GC con errores
@@ -1427,9 +1434,10 @@ async getStats() {
                     audit.checked_by,
                     audit.build_cell,
                     audit.order_number || 'N/A',
-                    `${audit.sh || 'N/A'}${audit.golftow ? ' (GOLF TOWN)' : ''}${audit.pga ? ' (PGA)' : ''}`,
+                    `${audit.sh || 'N/A'}${audit.golftow ? ' (GOLF TOWN)' : ''}${audit.pga ? ' (PGA)' : ''}${audit.amazon ? ' (Amazon)' : ''}`,
                     audit.golftow ? 'Sí' : 'No',
                     audit.pga ? 'Sí' : 'No',
+                    audit.amazon ? 'Sí' : 'No',
                     (audit.qty_of_gc_in_order || 0).toString(),
                     audit.errors_found ? 'Sí' : 'No',
                     (audit.gc_with_errors || 0).toString(),
@@ -1438,7 +1446,7 @@ async getStats() {
             });
             
             // Configurar tabla
-            const tableHeaders = ['N°', 'Fecha', 'Auditor', 'Celda', 'Orden', 'SH', 'GOLF TOWN', 'PGA', 'QTY GC', 'Errores', 'GC Errores', 'Total Err'];
+            const tableHeaders = ['N°', 'Fecha', 'Auditor', 'Celda', 'Orden', 'SH', 'GOLF TOWN', 'PGA', 'Amazon', 'QTY GC', 'Errores', 'GC Errores', 'Total Err'];
             
             // Generar tabla
             doc.autoTable({
@@ -1465,10 +1473,13 @@ async getStats() {
                     3: { cellWidth: 15 }, // Celda
                     4: { cellWidth: 25 }, // Orden
                     5: { cellWidth: 15 }, // SH
-                    6: { cellWidth: 15 }, // QTY GC
-                    7: { cellWidth: 15 }, // Errores
-                    8: { cellWidth: 18 }, // GC Errores
-                    9: { cellWidth: 18 }  // Total Err
+                    6: { cellWidth: 15 }, // GOLF TOWN
+                    7: { cellWidth: 15 }, // PGA
+                    8: { cellWidth: 15 }, // Amazon
+                    9: { cellWidth: 18 }, // QTY GC
+                    10: { cellWidth: 18 }, // Errores
+                    11: { cellWidth: 18 }, // GC Errores
+                    12: { cellWidth: 18 }  // Total Err
                 },
                 margin: { top: 45, right: 10, bottom: 10, left: 10 },
                 didDrawPage: (data) => {

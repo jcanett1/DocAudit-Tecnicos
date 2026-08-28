@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS public.dotaudit (
     sh VARCHAR(20),
     golftow BOOLEAN NOT NULL DEFAULT FALSE,
     pga BOOLEAN NOT NULL DEFAULT FALSE,
+    amazon BOOLEAN NOT NULL DEFAULT FALSE,
     qty_of_gc_in_order INTEGER,
     errors_found BOOLEAN NOT NULL,
     gc_with_errors INTEGER,
@@ -36,6 +37,10 @@ CREATE TABLE IF NOT EXISTS public.dotaudit (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- La columna también se agrega de forma idempotente para instalaciones existentes.
+ALTER TABLE public.dotaudit
+    ADD COLUMN IF NOT EXISTS amazon BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- Crear índices para mejorar el rendimiento
 CREATE INDEX IF NOT EXISTS idx_dotaudit_audit_date ON public.dotaudit(audit_date);
@@ -82,6 +87,7 @@ COMMENT ON COLUMN public.dotaudit.build_cell IS 'Número de celda donde se const
 COMMENT ON COLUMN public.dotaudit.errors_found IS 'Indica si se encontraron errores';
 COMMENT ON COLUMN public.dotaudit.golftow IS 'Indica si la orden corresponde a GOLF TOWN';
 COMMENT ON COLUMN public.dotaudit.pga IS 'Indica si la orden corresponde a PGA';
+COMMENT ON COLUMN public.dotaudit.amazon IS 'Indica si la orden corresponde a Amazon';
 COMMENT ON COLUMN public.dotaudit.gc_with_errors IS 'Cantidad de palos de golf con errores';
 COMMENT ON COLUMN public.dotaudit.notes IS 'Notas adicionales sobre la auditoría';
 

@@ -166,6 +166,14 @@
                             <option value="false">Sin PGA</option>
                         </select>
                     </div>
+                    <div class="stats-filter-group">
+                        <label for="statsFilterAmazon"><i class="fab fa-amazon"></i> Amazon:</label>
+                        <select id="statsFilterAmazon">
+                            <option value="">Todas las órdenes</option>
+                            <option value="true">Solo Amazon</option>
+                            <option value="false">Sin Amazon</option>
+                        </select>
+                    </div>
                     <button id="loadStatsBtn" class="btn btn-primary">
                         <i class="fas fa-sync-alt"></i> Cargar Estadísticas
                     </button>
@@ -212,7 +220,14 @@
                         <div id="statsPgaTable" class="stats-table-wrapper"></div>
                     </div>
 
-                    <!-- 5. Órdenes repetidas -->
+                    <!-- 5. Auditorías Amazon -->
+                    <div class="stats-section">
+                        <h2 class="stats-section-title"><i class="fab fa-amazon"></i> Auditorías Amazon</h2>
+                        <p class="stats-section-subtitle">Listado de las auditorías marcadas como Amazon en el período seleccionado.</p>
+                        <div id="statsAmazonTable" class="stats-table-wrapper"></div>
+                    </div>
+
+                    <!-- 6. Órdenes repetidas -->
                     <div class="stats-section">
                         <h2 class="stats-section-title"><i class="fas fa-copy"></i> Órdenes Repetidas</h2>
                         <div id="statsRepeatedOrders"></div>
@@ -398,6 +413,13 @@
                             <label class="checkbox-label" for="pga">
                                 <input type="checkbox" id="pga" name="pga">
                                 <span>PGA</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group checkbox-group amazon-group">
+                            <label class="checkbox-label" for="amazon">
+                                <input type="checkbox" id="amazon" name="amazon">
+                                <span>Amazon</span>
                             </label>
                         </div>
                         
