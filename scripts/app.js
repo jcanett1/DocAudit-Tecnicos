@@ -171,6 +171,8 @@ correctDateForTimezone(dateString) {
         // Manejar checkbox de errores
         document.getElementById('errors_found')?.addEventListener('change', (e) => {
             this.toggleErrorFields(e.target.checked);
+            this.updateOperatorOptions();
+            this.updateOperatorSelectionState();
         });
 
         // Selector de operadores: las fuentes son exclusivas y sus opciones
@@ -297,9 +299,10 @@ correctDateForTimezone(dateString) {
         if (!operatorSelect) return;
 
         const hasSelectedOperator = this.getSelectedOperatorValues().length > 0;
-        const isInvalid = !operatorSelect.disabled && !hasSelectedOperator && this.operatorValidationAttempted;
+        const errorsFound = document.getElementById('errors_found')?.checked === true;
+        const isInvalid = errorsFound && !operatorSelect.disabled && !hasSelectedOperator && this.operatorValidationAttempted;
         operatorSelect.setCustomValidity(
-            isInvalid ? 'Selecciona al menos un operador antes de guardar.' : ''
+            isInvalid ? 'Selecciona al menos un operador cuando reportas errores.' : ''
         );
         operatorSelect.setAttribute('aria-invalid', isInvalid ? 'true' : 'false');
         operatorSelect.classList.toggle('operator-selection-invalid', isInvalid);
@@ -373,14 +376,17 @@ correctDateForTimezone(dateString) {
         this.renderSelectedOperators();
 
         if (hint) {
+            const errorsFound = document.getElementById('errors_found')?.checked === true;
             if (source === 'cell') {
                 hint.textContent = buildCell?.value
-                    ? `Se usará la celda seleccionada: ${buildCell.value}.`
+                    ? `Se usará la celda seleccionada: ${buildCell.value}${errorsFound ? ' (obligatoria porque se reportaron errores).' : '.'}`
                     : 'Selecciona primero una celda en Build Cell.';
             } else if (source) {
-                hint.textContent = `Selecciona un nombre de ${source === 'production' ? 'PRODUCCION' : 'TECNICOS'}; se agregará abajo y podrás elegir otro.`;
+                hint.textContent = `Selecciona un nombre de ${source === 'production' ? 'PRODUCCION' : 'TECNICOS'}; se agregará abajo y podrás elegir otro${errorsFound ? '. Debes seleccionar al menos uno.' : ' (opcional mientras no se reporten errores).'}`;
             } else {
-                hint.textContent = 'Selecciona una fuente para cargar los nombres.';
+                hint.textContent = errorsFound
+                    ? 'Selecciona una fuente y al menos un operador porque se reportaron errores.'
+                    : 'Selecciona una fuente para cargar los nombres. Es opcional si no se reportaron errores.';
             }
         }
 
@@ -843,13 +849,14 @@ async handleFormSubmit(e) {
         const form = e.target;
         const data = this.extractFormData(form);
 
-        // Validación obligatoria: se debe seleccionar al menos un operador.
+        // Los operadores son obligatorios únicamente cuando se reportaron errores.
         const selectedOperators = this.normalizeOperatorValues(data.operadores);
         const operatorSelect = document.getElementById('operadores');
-        if (selectedOperators.length === 0) {
+        const errorsFound = data.errors_found === true || data.errors_found === 'true' || data.errors_found === 'on';
+        if (errorsFound && selectedOperators.length === 0) {
             this.operatorValidationAttempted = true;
             this.updateOperatorSelectionState();
-            this.showNotification('Debes seleccionar al menos un operador antes de guardar.', 'error');
+            this.showNotification('Debes seleccionar al menos un operador cuando reportas errores.', 'error');
             if (operatorSelect && !operatorSelect.disabled) {
                 operatorSelect.focus();
                 operatorSelect.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -861,7 +868,6 @@ async handleFormSubmit(e) {
         operatorSelect?.setCustomValidity('');
 
         // 🔒 VALIDACIÓN PERSONALIZADA: Si hay errores y palos con errores, se requiere al menos un tipo de error > 0
-        const errorsFound = data.errors_found === true || data.errors_found === 'true' || data.errors_found === 'on';
         const gcWithErrors = parseInt(data.gc_with_errors) || 0;
 
         if (errorsFound && gcWithErrors > 0) {
