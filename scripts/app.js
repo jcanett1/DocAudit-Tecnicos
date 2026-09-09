@@ -169,6 +169,10 @@ correctDateForTimezone(dateString) {
             this.toggleErrorFields(e.target.checked);
         });
 
+        // Selector de operadores: las fuentes son exclusivas y sus opciones
+        // se mantienen en el frontend, sin consultar ni modificar la base de datos.
+        this.bindOperatorSelectorEvents();
+
         // Inicializar uploader de imágenes
         this.bindImageUploadEvents();
 
@@ -176,6 +180,130 @@ correctDateForTimezone(dateString) {
         document.querySelector('.notification-close')?.addEventListener('click', () => {
             this.hideNotification();
         });
+    }
+
+    // Inicializar los controles de fuente de operadores.
+    bindOperatorSelectorEvents() {
+        const sourceInputs = document.querySelectorAll('input[name="operator_source"]');
+        const buildCell = document.getElementById('build_cell');
+
+        sourceInputs.forEach(input => {
+            input.addEventListener('change', (event) => {
+                // Aunque visualmente son checkboxes, solo se permite una fuente activa.
+                if (event.target.checked) {
+                    sourceInputs.forEach(otherInput => {
+                        if (otherInput !== event.target) otherInput.checked = false;
+                    });
+                }
+                this.updateOperatorOptions();
+            });
+        });
+
+        buildCell?.addEventListener('change', () => {
+            const cellSource = document.getElementById('operatorSourceCell');
+            if (cellSource?.checked) this.updateOperatorOptions();
+        });
+
+        this.resetOperatorSelector();
+    }
+
+    getOperatorGroups() {
+        return this.config.OPERATOR_GROUPS || {};
+    }
+
+    getSelectedOperatorSource() {
+        return document.querySelector('input[name="operator_source"]:checked')?.value || '';
+    }
+
+    // Actualizar el select con la lista correspondiente a la fuente seleccionada.
+    updateOperatorOptions(selectedValue = '') {
+        const operatorSelect = document.getElementById('operadores');
+        const hint = document.getElementById('operatorSelectionHint');
+        const buildCell = document.getElementById('build_cell');
+        if (!operatorSelect) return;
+
+        const source = this.getSelectedOperatorSource();
+        const groups = this.getOperatorGroups();
+        const cellValue = source === 'cell' ? (buildCell?.value || '') : '';
+        const effectiveSelectedValue = cellValue || selectedValue;
+        const options = document.createDocumentFragment();
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+
+        if (!source) {
+            placeholder.textContent = 'Selecciona una fuente';
+            operatorSelect.disabled = true;
+        } else if (source === 'cell') {
+            placeholder.textContent = buildCell?.value
+                ? 'Seleccionar celda completa'
+                : 'Selecciona primero Build Cell';
+            operatorSelect.disabled = !buildCell?.value;
+        } else {
+            placeholder.textContent = 'Seleccionar operador';
+            operatorSelect.disabled = false;
+        }
+        options.appendChild(placeholder);
+
+        if (source === 'cell' && buildCell?.value) {
+            const cellOption = document.createElement('option');
+            cellOption.value = buildCell.value;
+            cellOption.textContent = `Celda ${buildCell.value}`;
+            options.appendChild(cellOption);
+        } else if (source && source !== 'cell') {
+            (groups[source] || []).forEach(operatorName => {
+                const option = document.createElement('option');
+                option.value = operatorName;
+                option.textContent = operatorName;
+                options.appendChild(option);
+            });
+        }
+
+        operatorSelect.replaceChildren(options);
+
+        // Mantener valores históricos que no pertenezcan a las listas nuevas.
+        if (effectiveSelectedValue && !Array.from(operatorSelect.options).some(option => option.value === effectiveSelectedValue)) {
+            const currentOption = document.createElement('option');
+            currentOption.value = effectiveSelectedValue;
+            currentOption.textContent = `Valor actual: ${effectiveSelectedValue}`;
+            operatorSelect.appendChild(currentOption);
+        }
+        operatorSelect.value = effectiveSelectedValue;
+
+        if (hint) {
+            if (source === 'cell') {
+                hint.textContent = buildCell?.value
+                    ? `Se usará la celda seleccionada: ${buildCell.value}.`
+                    : 'Selecciona primero una celda en Build Cell.';
+            } else if (source) {
+                hint.textContent = `Selecciona un nombre de ${source === 'production' ? 'PRODUCCION' : 'TECNICOS'}.`;
+            } else {
+                hint.textContent = 'Selecciona una fuente para cargar los nombres.';
+            }
+        }
+    }
+
+    resetOperatorSelector() {
+        document.querySelectorAll('input[name="operator_source"]').forEach(input => {
+            input.checked = false;
+        });
+        this.updateOperatorOptions();
+    }
+
+    restoreOperatorSelector(operatorValue, buildCellValue) {
+        const groups = this.getOperatorGroups();
+        let source = '';
+
+        if (operatorValue && operatorValue === buildCellValue) {
+            source = 'cell';
+        } else {
+            source = Object.keys(groups).find(groupName => groups[groupName].includes(operatorValue)) || '';
+        }
+
+        document.querySelectorAll('input[name="operator_source"]').forEach(input => {
+            input.checked = input.value === source;
+        });
+
+        this.updateOperatorOptions(operatorValue || '');
     }
 
     // Cargar auditorías con paginación
@@ -352,6 +480,7 @@ correctDateForTimezone(dateString) {
         } else {
             form.reset();
             this.setupDateField();
+            this.resetOperatorSelector();
         }
 
         // Limpiar imágenes pendientes al abrir el modal
@@ -375,6 +504,7 @@ correctDateForTimezone(dateString) {
             if (modal.id === 'auditModal') {
                 this.currentEditingId = null;
                 document.getElementById('auditForm').reset();
+                this.resetOperatorSelector();
             }
         }
     }
@@ -396,6 +526,8 @@ correctDateForTimezone(dateString) {
                     }
                 }
             });
+
+            this.restoreOperatorSelector(formData.operadores, formData.build_cell);
 
             // Mostrar campos de error si es necesario
             this.toggleErrorFields(formData.errors_found);

@@ -568,6 +568,52 @@ tbody tr:last-child td {
     margin: 0;
 }
 
+/* Selector de fuente de operadores */
+.operator-source-options {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.operator-source-option {
+    display: flex !important;
+    align-items: center;
+    gap: 0.5rem;
+    width: fit-content;
+    margin-bottom: 0 !important;
+    padding: 0.45rem 0.65rem;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.operator-source-option:hover {
+    background: rgba(102, 126, 234, 0.06);
+    border-color: rgba(102, 126, 234, 0.45);
+}
+
+.operator-source-option input[type="checkbox"] {
+    width: auto !important;
+    margin: 0;
+    accent-color: #667eea;
+}
+
+.operators-field-group select:disabled {
+    color: #8a8f98;
+    background: #eef0f4;
+    cursor: not-allowed;
+}
+
+.field-hint {
+    display: block;
+    margin-top: 0.4rem;
+    color: #6c757d;
+    font-size: 0.75rem;
+}
+
 /* Error types grid */
 .error-types-grid {
     display: grid;

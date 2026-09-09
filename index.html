@@ -387,9 +387,26 @@
                     <div class="form-section">
                         <h3><i class="fas fa-shopping-cart"></i> Información de la Orden</h3>
                         
-                        <div class="form-group">
+                        <div class="form-group operators-field-group">
                             <label for="operadores">Operadores:</label>
-                            <input type="text" id="operadores" name="operadores" placeholder="Nombres de operadores">
+                            <div class="operator-source-options" role="group" aria-label="Fuente de operadores">
+                                <label class="operator-source-option" for="operatorSourceProduction">
+                                    <input type="checkbox" id="operatorSourceProduction" name="operator_source" value="production">
+                                    <span>PRODUCCION</span>
+                                </label>
+                                <label class="operator-source-option" for="operatorSourceTechnicians">
+                                    <input type="checkbox" id="operatorSourceTechnicians" name="operator_source" value="technicians">
+                                    <span>TECNICOS</span>
+                                </label>
+                                <label class="operator-source-option" for="operatorSourceCell">
+                                    <input type="checkbox" id="operatorSourceCell" name="operator_source" value="cell">
+                                    <span>CELDA COMPLETA</span>
+                                </label>
+                            </div>
+                            <select id="operadores" name="operadores" disabled>
+                                <option value="">Seleccionar operador</option>
+                            </select>
+                            <small id="operatorSelectionHint" class="field-hint">Selecciona una fuente para cargar los nombres.</small>
                         </div>
                         
                         <div class="form-group">
