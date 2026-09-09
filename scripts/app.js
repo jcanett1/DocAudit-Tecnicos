@@ -14,6 +14,10 @@ class AuditApp {
 
         // Imágenes pendientes de subir (array de objetos { file, previewUrl })
         this.pendingImages = [];
+
+        // Operadores elegidos en el selector consecutivo.
+        this.selectedOperators = [];
+        this.operatorValidationAttempted = false;
         
         this.init();
     }
@@ -196,6 +200,7 @@ correctDateForTimezone(dateString) {
                         if (otherInput !== event.target) otherInput.checked = false;
                     });
                 }
+                this.clearSelectedOperators();
                 this.updateOperatorOptions();
             });
         });
@@ -205,7 +210,7 @@ correctDateForTimezone(dateString) {
             if (cellSource?.checked) this.updateOperatorOptions();
         });
 
-        operatorSelect?.addEventListener('change', () => this.updateOperatorSelectionState());
+        operatorSelect?.addEventListener('change', () => this.handleOperatorOptionSelected());
 
         this.resetOperatorSelector();
     }
@@ -232,12 +237,59 @@ correctDateForTimezone(dateString) {
     }
 
     getSelectedOperatorValues() {
-        const operatorSelect = document.getElementById('operadores');
-        if (!operatorSelect) return [];
+        return [...this.selectedOperators];
+    }
 
-        return Array.from(operatorSelect.selectedOptions)
-            .map(option => option.value.trim())
-            .filter(Boolean);
+    handleOperatorOptionSelected() {
+        const operatorSelect = document.getElementById('operadores');
+        const selectedValue = operatorSelect?.value?.trim();
+        if (!selectedValue) return;
+
+        if (!this.selectedOperators.includes(selectedValue)) {
+            this.selectedOperators.push(selectedValue);
+        }
+
+        this.renderSelectedOperators();
+        this.updateOperatorSelectionState();
+
+        // Dejar el select listo para seleccionar otro operador consecutivamente.
+        if (operatorSelect) operatorSelect.value = '';
+    }
+
+    renderSelectedOperators() {
+        const container = document.getElementById('selectedOperators');
+        if (!container) return;
+
+        container.replaceChildren();
+        this.selectedOperators.forEach((operatorName, index) => {
+            const tag = document.createElement('span');
+            tag.className = 'selected-operator-tag';
+
+            const label = document.createElement('span');
+            label.textContent = operatorName;
+
+            const removeButton = document.createElement('button');
+            removeButton.type = 'button';
+            removeButton.className = 'selected-operator-remove';
+            removeButton.setAttribute('aria-label', `Quitar operador ${operatorName}`);
+            removeButton.title = 'Quitar operador';
+            removeButton.innerHTML = '&times;';
+            removeButton.addEventListener('click', () => this.removeSelectedOperator(index));
+
+            tag.append(label, removeButton);
+            container.appendChild(tag);
+        });
+    }
+
+    removeSelectedOperator(index) {
+        this.selectedOperators.splice(index, 1);
+        this.renderSelectedOperators();
+        this.updateOperatorSelectionState();
+    }
+
+    clearSelectedOperators() {
+        this.selectedOperators = [];
+        this.renderSelectedOperators();
     }
 
     updateOperatorSelectionState() {
@@ -245,15 +297,16 @@ correctDateForTimezone(dateString) {
         if (!operatorSelect) return;
 
         const hasSelectedOperator = this.getSelectedOperatorValues().length > 0;
+        const isInvalid = !operatorSelect.disabled && !hasSelectedOperator && this.operatorValidationAttempted;
         operatorSelect.setCustomValidity(
-            hasSelectedOperator ? '' : 'Selecciona al menos un operador antes de guardar.'
+            isInvalid ? 'Selecciona al menos un operador antes de guardar.' : ''
         );
-        operatorSelect.setAttribute('aria-invalid', hasSelectedOperator ? 'false' : 'true');
-        operatorSelect.classList.toggle('operator-selection-invalid', !hasSelectedOperator);
+        operatorSelect.setAttribute('aria-invalid', isInvalid ? 'true' : 'false');
+        operatorSelect.classList.toggle('operator-selection-invalid', isInvalid);
     }
 
     // Actualizar el select con la lista correspondiente a la fuente seleccionada.
-    updateOperatorOptions(selectedValues = '') {
+    updateOperatorOptions(selectedValues = null) {
         const operatorSelect = document.getElementById('operadores');
         const hint = document.getElementById('operatorSelectionHint');
         const buildCell = document.getElementById('build_cell');
@@ -262,8 +315,15 @@ correctDateForTimezone(dateString) {
         const source = this.getSelectedOperatorSource();
         const groups = this.getOperatorGroups();
         const cellValue = source === 'cell' ? (buildCell?.value || '') : '';
-        const requestedValues = this.normalizeOperatorValues(selectedValues);
-        const effectiveSelectedValues = cellValue ? [cellValue] : requestedValues;
+        if (selectedValues !== null) {
+            this.selectedOperators = this.normalizeOperatorValues(selectedValues);
+        }
+        if (source === 'cell') {
+            this.selectedOperators = cellValue ? [cellValue] : [];
+        } else if (!source && selectedValues === null) {
+            this.selectedOperators = [];
+        }
+
         const options = document.createDocumentFragment();
         const placeholder = document.createElement('option');
         placeholder.value = '';
@@ -299,7 +359,7 @@ correctDateForTimezone(dateString) {
         operatorSelect.replaceChildren(options);
 
         // Mantener valores históricos que no pertenezcan a las listas nuevas.
-        effectiveSelectedValues.forEach(selectedValue => {
+        this.selectedOperators.forEach(selectedValue => {
             if (selectedValue && !Array.from(operatorSelect.options).some(option => option.value === selectedValue)) {
                 const currentOption = document.createElement('option');
                 currentOption.value = selectedValue;
@@ -308,9 +368,9 @@ correctDateForTimezone(dateString) {
             }
         });
 
-        Array.from(operatorSelect.options).forEach(option => {
-            option.selected = effectiveSelectedValues.includes(option.value);
-        });
+        // El select siempre queda en el placeholder; cada elección se convierte en una etiqueta.
+        operatorSelect.value = '';
+        this.renderSelectedOperators();
 
         if (hint) {
             if (source === 'cell') {
@@ -318,7 +378,7 @@ correctDateForTimezone(dateString) {
                     ? `Se usará la celda seleccionada: ${buildCell.value}.`
                     : 'Selecciona primero una celda en Build Cell.';
             } else if (source) {
-                hint.textContent = `Selecciona uno o varios nombres de ${source === 'production' ? 'PRODUCCION' : 'TECNICOS'}. Usa Ctrl/Cmd para elegir varios.`;
+                hint.textContent = `Selecciona un nombre de ${source === 'production' ? 'PRODUCCION' : 'TECNICOS'}; se agregará abajo y podrás elegir otro.`;
             } else {
                 hint.textContent = 'Selecciona una fuente para cargar los nombres.';
             }
@@ -331,6 +391,8 @@ correctDateForTimezone(dateString) {
         document.querySelectorAll('input[name="operator_source"]').forEach(input => {
             input.checked = false;
         });
+        this.operatorValidationAttempted = false;
+        this.clearSelectedOperators();
         this.updateOperatorOptions();
     }
 
@@ -723,6 +785,8 @@ correctDateForTimezone(dateString) {
                         .map(option => option.value.trim())
                         .filter(Boolean)
                         .join(', ');
+                } else if (fieldName === 'operadores') {
+                    data[fieldName] = this.getSelectedOperatorValues().join(', ');
                 } else {
                     data[fieldName] = element.value;
                 }
@@ -783,6 +847,7 @@ async handleFormSubmit(e) {
         const selectedOperators = this.normalizeOperatorValues(data.operadores);
         const operatorSelect = document.getElementById('operadores');
         if (selectedOperators.length === 0) {
+            this.operatorValidationAttempted = true;
             this.updateOperatorSelectionState();
             this.showNotification('Debes seleccionar al menos un operador antes de guardar.', 'error');
             if (operatorSelect && !operatorSelect.disabled) {

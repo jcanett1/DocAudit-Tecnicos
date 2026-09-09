@@ -607,19 +607,54 @@ tbody tr:last-child td {
     cursor: not-allowed;
 }
 
-.operators-field-group select[multiple] {
-    min-height: 9rem;
-    padding: 0.35rem;
-    line-height: 1.4;
-}
-
-.operators-field-group select[multiple] option {
-    padding: 0.35rem 0.45rem;
-}
-
 .operators-field-group select.operator-selection-invalid {
     border-color: #dc3545;
     box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.12);
+}
+
+.selected-operators {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    min-height: 0;
+    margin-top: 0.75rem;
+}
+
+.selected-operator-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    max-width: 100%;
+    padding: 0.4rem 0.55rem 0.4rem 0.7rem;
+    border: 1px solid rgba(102, 126, 234, 0.35);
+    border-radius: 999px;
+    background: rgba(102, 126, 234, 0.1);
+    color: #2c3e50;
+    font-size: 0.78rem;
+    line-height: 1.25;
+}
+
+.selected-operator-tag > span:first-child {
+    overflow-wrap: anywhere;
+}
+
+.selected-operator-remove {
+    flex: 0 0 auto;
+    width: 1.25rem;
+    height: 1.25rem;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(220, 53, 69, 0.12);
+    color: #b02a37;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.selected-operator-remove:hover {
+    background: #dc3545;
+    color: #fff;
 }
 
 .field-hint {
