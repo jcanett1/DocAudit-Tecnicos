@@ -18,6 +18,7 @@ class AuditApp {
         // Operadores elegidos en el selector consecutivo.
         this.selectedOperators = [];
         this.operatorValidationAttempted = false;
+        this.duplicateOrderAudit = null;
         
         this.init();
     }
@@ -168,6 +169,14 @@ correctDateForTimezone(dateString) {
         document.getElementById('auditForm')?.addEventListener('submit', (e) => this.handleFormSubmit(e));
         document.getElementById('cancelBtn')?.addEventListener('click', () => this.closeModal(document.getElementById('auditModal')));
 
+        document.getElementById('order_number')?.addEventListener('input', () => {
+            this.clearDuplicateOrderNotice();
+        });
+
+        document.getElementById('order_number')?.addEventListener('blur', () => {
+            this.previewDuplicateOrder();
+        });
+
         // Manejar checkbox de errores
         document.getElementById('errors_found')?.addEventListener('change', (e) => {
             this.toggleErrorFields(e.target.checked);
@@ -186,6 +195,74 @@ correctDateForTimezone(dateString) {
         document.querySelector('.notification-close')?.addEventListener('click', () => {
             this.hideNotification();
         });
+    }
+
+    clearDuplicateOrderNotice() {
+        this.duplicateOrderAudit = null;
+        const notice = document.getElementById('duplicateOrderNotice');
+        if (notice) {
+            notice.hidden = true;
+            notice.replaceChildren();
+        }
+    }
+
+    formatDuplicateOrderSummary(audit) {
+        const status = audit.errors_found ? 'Con errores' : 'Sin errores';
+        const operators = audit.operadores || 'Sin operador registrado';
+        const date = audit.audit_date ? this.formatDate(audit.audit_date) : 'Sin fecha';
+        const cell = audit.build_cell || 'Sin celda';
+        const auditor = audit.checked_by || 'Sin auditor';
+        const sh = audit.sh || 'Sin SH';
+        const qty = audit.qty_of_gc_in_order ?? 0;
+
+        return `Fecha: ${date} · Auditor: ${auditor} · Celda: ${cell} · SH: ${sh} · Operadores: ${operators} · Estado: ${status} · QTY GC: ${qty}`;
+    }
+
+    showDuplicateOrderNotice(audit) {
+        const notice = document.getElementById('duplicateOrderNotice');
+        if (!notice || !audit) return;
+
+        const title = document.createElement('strong');
+        title.innerHTML = '<i class="fas fa-lock"></i> Esta orden ya fue ingresada';
+
+        const order = document.createElement('span');
+        order.textContent = `Orden: ${audit.order_number || '(sin número)'}`;
+
+        const summary = document.createElement('span');
+        summary.textContent = this.formatDuplicateOrderSummary(audit);
+
+        notice.replaceChildren(title, order, summary);
+        notice.hidden = false;
+        this.duplicateOrderAudit = audit;
+    }
+
+    async findDuplicateOrder(orderNumber) {
+        const normalizedOrderNumber = String(orderNumber || '').trim();
+        if (!normalizedOrderNumber) return null;
+
+        const audit = await window.auditAPI.findAuditByOrderNumber(normalizedOrderNumber);
+        if (audit && this.currentEditingId && String(audit.id) === String(this.currentEditingId)) {
+            return null;
+        }
+        return audit;
+    }
+
+    async previewDuplicateOrder() {
+        const input = document.getElementById('order_number');
+        const orderNumber = input?.value?.trim();
+        if (!orderNumber) {
+            this.clearDuplicateOrderNotice();
+            return;
+        }
+
+        try {
+            const duplicate = await this.findDuplicateOrder(orderNumber);
+            if (input?.value?.trim() !== orderNumber) return;
+            if (duplicate) this.showDuplicateOrderNotice(duplicate);
+            else this.clearDuplicateOrderNotice();
+        } catch (error) {
+            console.error('Error verificando orden duplicada:', error);
+        }
     }
 
     // Inicializar los controles de fuente de operadores.
@@ -592,11 +669,13 @@ correctDateForTimezone(dateString) {
         modalTitle.textContent = auditId ? 'Editar Auditoría' : 'Nueva Auditoría';
 
         if (auditId) {
+            this.clearDuplicateOrderNotice();
             this.loadAuditForEdit(auditId);
         } else {
             form.reset();
             this.setupDateField();
             this.resetOperatorSelector();
+            this.clearDuplicateOrderNotice();
         }
 
         // Limpiar imágenes pendientes al abrir el modal
@@ -621,6 +700,7 @@ correctDateForTimezone(dateString) {
                 this.currentEditingId = null;
                 document.getElementById('auditForm').reset();
                 this.resetOperatorSelector();
+                this.clearDuplicateOrderNotice();
             }
         }
     }
@@ -848,6 +928,22 @@ async handleFormSubmit(e) {
     try {
         const form = e.target;
         const data = this.extractFormData(form);
+        data.order_number = String(data.order_number || '').trim();
+
+        // Candado de orden: una orden solo puede registrarse una vez.
+        // Al editar, se permite conservar la misma orden de la auditoría actual.
+        if (data.order_number) {
+            const duplicateOrder = await this.findDuplicateOrder(data.order_number);
+            if (duplicateOrder) {
+                this.showDuplicateOrderNotice(duplicateOrder);
+                this.showNotification(
+                    `🔒 La orden ${data.order_number} ya fue ingresada. ${this.formatDuplicateOrderSummary(duplicateOrder)}`,
+                    'error'
+                );
+                document.getElementById('order_number')?.focus();
+                return;
+            }
+        }
 
         // Los operadores son obligatorios únicamente cuando se reportaron errores.
         const selectedOperators = this.normalizeOperatorValues(data.operadores);

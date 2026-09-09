@@ -177,6 +177,24 @@ class AuditAPI {
         }
     }
 
+    // Buscar una orden existente para impedir registros duplicados.
+    async findAuditByOrderNumber(orderNumber) {
+        const normalizedOrderNumber = String(orderNumber || '').trim();
+        if (!normalizedOrderNumber) return null;
+
+        try {
+            const params = new URLSearchParams({
+                order_number: `eq.${normalizedOrderNumber}`,
+                select: '*',
+                limit: '1'
+            });
+            const response = await this.request(`/rest/v1/${this.tableName}?${params.toString()}`);
+            return Array.isArray(response) && response.length > 0 ? response[0] : null;
+        } catch (error) {
+            throw new Error(`Error al verificar la orden: ${error.message}`);
+        }
+    }
+
     // Crear nueva auditoría
     async createAudit(auditData) {
         try {
