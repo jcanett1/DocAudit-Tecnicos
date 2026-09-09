@@ -607,6 +607,21 @@ tbody tr:last-child td {
     cursor: not-allowed;
 }
 
+.operators-field-group select[multiple] {
+    min-height: 9rem;
+    padding: 0.35rem;
+    line-height: 1.4;
+}
+
+.operators-field-group select[multiple] option {
+    padding: 0.35rem 0.45rem;
+}
+
+.operators-field-group select.operator-selection-invalid {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.12);
+}
+
 .field-hint {
     display: block;
     margin-top: 0.4rem;

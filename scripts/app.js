@@ -186,6 +186,7 @@ correctDateForTimezone(dateString) {
     bindOperatorSelectorEvents() {
         const sourceInputs = document.querySelectorAll('input[name="operator_source"]');
         const buildCell = document.getElementById('build_cell');
+        const operatorSelect = document.getElementById('operadores');
 
         sourceInputs.forEach(input => {
             input.addEventListener('change', (event) => {
@@ -204,6 +205,8 @@ correctDateForTimezone(dateString) {
             if (cellSource?.checked) this.updateOperatorOptions();
         });
 
+        operatorSelect?.addEventListener('change', () => this.updateOperatorSelectionState());
+
         this.resetOperatorSelector();
     }
 
@@ -215,8 +218,42 @@ correctDateForTimezone(dateString) {
         return document.querySelector('input[name="operator_source"]:checked')?.value || '';
     }
 
+    normalizeOperatorValues(value) {
+        if (Array.isArray(value)) {
+            return value.map(operator => String(operator).trim()).filter(Boolean);
+        }
+
+        if (typeof value !== 'string') return [];
+
+        return value
+            .split(/\s*,\s*|\r?\n/)
+            .map(operator => operator.trim())
+            .filter(Boolean);
+    }
+
+    getSelectedOperatorValues() {
+        const operatorSelect = document.getElementById('operadores');
+        if (!operatorSelect) return [];
+
+        return Array.from(operatorSelect.selectedOptions)
+            .map(option => option.value.trim())
+            .filter(Boolean);
+    }
+
+    updateOperatorSelectionState() {
+        const operatorSelect = document.getElementById('operadores');
+        if (!operatorSelect) return;
+
+        const hasSelectedOperator = this.getSelectedOperatorValues().length > 0;
+        operatorSelect.setCustomValidity(
+            hasSelectedOperator ? '' : 'Selecciona al menos un operador antes de guardar.'
+        );
+        operatorSelect.setAttribute('aria-invalid', hasSelectedOperator ? 'false' : 'true');
+        operatorSelect.classList.toggle('operator-selection-invalid', !hasSelectedOperator);
+    }
+
     // Actualizar el select con la lista correspondiente a la fuente seleccionada.
-    updateOperatorOptions(selectedValue = '') {
+    updateOperatorOptions(selectedValues = '') {
         const operatorSelect = document.getElementById('operadores');
         const hint = document.getElementById('operatorSelectionHint');
         const buildCell = document.getElementById('build_cell');
@@ -225,7 +262,8 @@ correctDateForTimezone(dateString) {
         const source = this.getSelectedOperatorSource();
         const groups = this.getOperatorGroups();
         const cellValue = source === 'cell' ? (buildCell?.value || '') : '';
-        const effectiveSelectedValue = cellValue || selectedValue;
+        const requestedValues = this.normalizeOperatorValues(selectedValues);
+        const effectiveSelectedValues = cellValue ? [cellValue] : requestedValues;
         const options = document.createDocumentFragment();
         const placeholder = document.createElement('option');
         placeholder.value = '';
@@ -261,13 +299,18 @@ correctDateForTimezone(dateString) {
         operatorSelect.replaceChildren(options);
 
         // Mantener valores históricos que no pertenezcan a las listas nuevas.
-        if (effectiveSelectedValue && !Array.from(operatorSelect.options).some(option => option.value === effectiveSelectedValue)) {
-            const currentOption = document.createElement('option');
-            currentOption.value = effectiveSelectedValue;
-            currentOption.textContent = `Valor actual: ${effectiveSelectedValue}`;
-            operatorSelect.appendChild(currentOption);
-        }
-        operatorSelect.value = effectiveSelectedValue;
+        effectiveSelectedValues.forEach(selectedValue => {
+            if (selectedValue && !Array.from(operatorSelect.options).some(option => option.value === selectedValue)) {
+                const currentOption = document.createElement('option');
+                currentOption.value = selectedValue;
+                currentOption.textContent = `Valor actual: ${selectedValue}`;
+                operatorSelect.appendChild(currentOption);
+            }
+        });
+
+        Array.from(operatorSelect.options).forEach(option => {
+            option.selected = effectiveSelectedValues.includes(option.value);
+        });
 
         if (hint) {
             if (source === 'cell') {
@@ -275,11 +318,13 @@ correctDateForTimezone(dateString) {
                     ? `Se usará la celda seleccionada: ${buildCell.value}.`
                     : 'Selecciona primero una celda en Build Cell.';
             } else if (source) {
-                hint.textContent = `Selecciona un nombre de ${source === 'production' ? 'PRODUCCION' : 'TECNICOS'}.`;
+                hint.textContent = `Selecciona uno o varios nombres de ${source === 'production' ? 'PRODUCCION' : 'TECNICOS'}. Usa Ctrl/Cmd para elegir varios.`;
             } else {
                 hint.textContent = 'Selecciona una fuente para cargar los nombres.';
             }
         }
+
+        this.updateOperatorSelectionState();
     }
 
     resetOperatorSelector() {
@@ -291,19 +336,22 @@ correctDateForTimezone(dateString) {
 
     restoreOperatorSelector(operatorValue, buildCellValue) {
         const groups = this.getOperatorGroups();
+        const operatorValues = this.normalizeOperatorValues(operatorValue);
         let source = '';
 
-        if (operatorValue && operatorValue === buildCellValue) {
+        if (operatorValues.includes(buildCellValue)) {
             source = 'cell';
         } else {
-            source = Object.keys(groups).find(groupName => groups[groupName].includes(operatorValue)) || '';
+            source = Object.keys(groups).find(groupName =>
+                operatorValues.some(value => groups[groupName].includes(value))
+            ) || '';
         }
 
         document.querySelectorAll('input[name="operator_source"]').forEach(input => {
             input.checked = input.value === source;
         });
 
-        this.updateOperatorOptions(operatorValue || '');
+        this.updateOperatorOptions(operatorValues);
     }
 
     // Cargar auditorías con paginación
@@ -670,7 +718,14 @@ correctDateForTimezone(dateString) {
         textFields.forEach(fieldName => {
             const element = form.querySelector(`[name="${fieldName}"]`);
             if (element) {
-                data[fieldName] = element.value;
+                if (fieldName === 'operadores' && element.multiple) {
+                    data[fieldName] = Array.from(element.selectedOptions)
+                        .map(option => option.value.trim())
+                        .filter(Boolean)
+                        .join(', ');
+                } else {
+                    data[fieldName] = element.value;
+                }
             }
         });
         
@@ -723,6 +778,22 @@ async handleFormSubmit(e) {
     try {
         const form = e.target;
         const data = this.extractFormData(form);
+
+        // Validación obligatoria: se debe seleccionar al menos un operador.
+        const selectedOperators = this.normalizeOperatorValues(data.operadores);
+        const operatorSelect = document.getElementById('operadores');
+        if (selectedOperators.length === 0) {
+            this.updateOperatorSelectionState();
+            this.showNotification('Debes seleccionar al menos un operador antes de guardar.', 'error');
+            if (operatorSelect && !operatorSelect.disabled) {
+                operatorSelect.focus();
+                operatorSelect.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                document.querySelector('.operators-field-group')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            return;
+        }
+        operatorSelect?.setCustomValidity('');
 
         // 🔒 VALIDACIÓN PERSONALIZADA: Si hay errores y palos con errores, se requiere al menos un tipo de error > 0
         const errorsFound = data.errors_found === true || data.errors_found === 'true' || data.errors_found === 'on';
