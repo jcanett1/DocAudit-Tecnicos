@@ -177,6 +177,12 @@ correctDateForTimezone(dateString) {
             this.previewDuplicateOrder();
         });
 
+        ['amazon', 'golftow', 'pga'].forEach(id => {
+            document.getElementById(id)?.addEventListener('change', () => {
+                this.previewDuplicateOrder();
+            });
+        });
+
         // Manejar checkbox de errores
         document.getElementById('errors_found')?.addEventListener('change', (e) => {
             this.toggleErrorFields(e.target.checked);
@@ -202,6 +208,7 @@ correctDateForTimezone(dateString) {
         const notice = document.getElementById('duplicateOrderNotice');
         if (notice) {
             notice.hidden = true;
+            notice.classList.remove('duplicate-order-allowed');
             notice.replaceChildren();
         }
     }
@@ -218,12 +225,27 @@ correctDateForTimezone(dateString) {
         return `Fecha: ${date} · Auditor: ${auditor} · Celda: ${cell} · SH: ${sh} · Operadores: ${operators} · Estado: ${status} · QTY GC: ${qty}`;
     }
 
-    showDuplicateOrderNotice(audit) {
+    getDuplicateOrderExceptionReason(data = null) {
+        const source = data || {
+            amazon: document.getElementById('amazon')?.checked === true,
+            golftow: document.getElementById('golftow')?.checked === true,
+            pga: document.getElementById('pga')?.checked === true
+        };
+        const reasons = [];
+        if (source.amazon) reasons.push('AMAZON');
+        if (source.golftow) reasons.push('GOLF TOWN');
+        if (source.pga) reasons.push('PGA');
+        return reasons;
+    }
+
+    showDuplicateOrderNotice(audit, exceptionReasons = []) {
         const notice = document.getElementById('duplicateOrderNotice');
         if (!notice || !audit) return;
 
         const title = document.createElement('strong');
-        title.innerHTML = '<i class="fas fa-lock"></i> Esta orden ya fue ingresada';
+        title.innerHTML = exceptionReasons.length > 0
+            ? '<i class="fas fa-unlock-alt"></i> Orden repetida permitida'
+            : '<i class="fas fa-lock"></i> Esta orden ya fue ingresada';
 
         const order = document.createElement('span');
         order.textContent = `Orden: ${audit.order_number || '(sin número)'}`;
@@ -231,7 +253,13 @@ correctDateForTimezone(dateString) {
         const summary = document.createElement('span');
         summary.textContent = this.formatDuplicateOrderSummary(audit);
 
-        notice.replaceChildren(title, order, summary);
+        const reason = document.createElement('span');
+        reason.textContent = exceptionReasons.length > 0
+            ? `Se permite repetir porque seleccionaste: ${exceptionReasons.join(', ')}.`
+            : 'Para repetirla debes seleccionar AMAZON, GOLF TOWN o PGA.';
+
+        notice.classList.toggle('duplicate-order-allowed', exceptionReasons.length > 0);
+        notice.replaceChildren(title, order, summary, reason);
         notice.hidden = false;
         this.duplicateOrderAudit = audit;
     }
@@ -258,7 +286,7 @@ correctDateForTimezone(dateString) {
         try {
             const duplicate = await this.findDuplicateOrder(orderNumber);
             if (input?.value?.trim() !== orderNumber) return;
-            if (duplicate) this.showDuplicateOrderNotice(duplicate);
+            if (duplicate) this.showDuplicateOrderNotice(duplicate, this.getDuplicateOrderExceptionReason());
             else this.clearDuplicateOrderNotice();
         } catch (error) {
             console.error('Error verificando orden duplicada:', error);
@@ -935,13 +963,17 @@ async handleFormSubmit(e) {
         if (data.order_number) {
             const duplicateOrder = await this.findDuplicateOrder(data.order_number);
             if (duplicateOrder) {
-                this.showDuplicateOrderNotice(duplicateOrder);
-                this.showNotification(
-                    `🔒 La orden ${data.order_number} ya fue ingresada. ${this.formatDuplicateOrderSummary(duplicateOrder)}`,
-                    'error'
-                );
-                document.getElementById('order_number')?.focus();
-                return;
+                const exceptionReasons = this.getDuplicateOrderExceptionReason(data);
+                this.showDuplicateOrderNotice(duplicateOrder, exceptionReasons);
+
+                if (exceptionReasons.length === 0) {
+                    this.showNotification(
+                        `🔒 La orden ${data.order_number} ya fue ingresada. ${this.formatDuplicateOrderSummary(duplicateOrder)}`,
+                        'error'
+                    );
+                    document.getElementById('order_number')?.focus();
+                    return;
+                }
             }
         }
 

@@ -587,6 +587,17 @@ tbody tr:last-child td {
     font-size: 0.84rem;
 }
 
+.duplicate-order-notice.duplicate-order-allowed {
+    border-color: rgba(25, 135, 84, 0.35);
+    border-left-color: #198754;
+    background: rgba(25, 135, 84, 0.07);
+    color: #146c43;
+}
+
+.duplicate-order-notice.duplicate-order-allowed strong {
+    color: #146c43;
+}
+
 .duplicate-order-notice span {
     overflow-wrap: anywhere;
 }
