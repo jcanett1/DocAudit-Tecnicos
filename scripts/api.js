@@ -380,6 +380,7 @@ class AuditAPI {
             golftow: audit.golftow === true,
             pga: audit.pga === true,
             amazon: audit.amazon === true,
+            scheels: audit.scheels === true,
             qty_of_gc_in_order: audit.qty_of_gc_in_order || '',
             errors_found: audit.errors_found || false,
             gc_with_errors: audit.gc_with_errors || '',
@@ -518,6 +519,11 @@ class AuditAPI {
                       formData.amazon === 1 ||
                       formData.amazon === '1' ||
                       formData.amazon === 'on';
+        data.scheels = formData.scheels === true ||
+                       formData.scheels === 'true' ||
+                       formData.scheels === 1 ||
+                       formData.scheels === '1' ||
+                       formData.scheels === 'on';
         data.qty_of_gc_in_order = formData.qty_of_gc_in_order ? parseInt(formData.qty_of_gc_in_order) : null;
         data.errors_found = formData.errors_found === true || 
                           formData.errors_found === 'true' || 

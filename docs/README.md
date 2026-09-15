@@ -108,6 +108,7 @@ Una aplicación web completa para gestionar auditorías de equipos de golf con f
 | `golftow` | BOOLEAN | NOT NULL, valor por defecto `false` | ¿La orden corresponde a GOLF TOWN? |
 | `pga` | BOOLEAN | NOT NULL, valor por defecto `false` | ¿La orden corresponde a PGA? |
 | `amazon` | BOOLEAN | NOT NULL, valor por defecto `false` | ¿La orden corresponde a Amazon? |
+| `scheels` | BOOLEAN | NOT NULL, valor por defecto `false` | ¿La orden corresponde a SCHEELS? |
 | `qty_of_gc_in_order` | INTEGER | | Cantidad de GC en orden |
 | `errors_found` | BOOLEAN | NOT NULL | ¿Se encontraron errores? |
 | `gc_with_errors` | INTEGER | | GC con errores |

@@ -73,7 +73,7 @@ audit-golf-app/
 - ✅ **Operadores**: Campo de texto
 - ✅ **Order Number**: Campo de texto
 - ✅ **SH**: Campo de texto
-- ✅ **Tipo de orden**: GOLF TOWN, PGA y Amazon
+- ✅ **Tipo de orden**: GOLF TOWN, PGA, Amazon y SCHEELS
 - ✅ **QTY of GC in order**: Campo numérico
 
 ### Errores

@@ -229,12 +229,14 @@ correctDateForTimezone(dateString) {
         const source = data || {
             amazon: document.getElementById('amazon')?.checked === true,
             golftow: document.getElementById('golftow')?.checked === true,
-            pga: document.getElementById('pga')?.checked === true
+            pga: document.getElementById('pga')?.checked === true,
+            scheels: document.getElementById('scheels')?.checked === true
         };
         const reasons = [];
         if (source.amazon) reasons.push('AMAZON');
         if (source.golftow) reasons.push('GOLF TOWN');
         if (source.pga) reasons.push('PGA');
+        if (source.scheels) reasons.push('SCHEELS');
         return reasons;
     }
 
@@ -256,7 +258,7 @@ correctDateForTimezone(dateString) {
         const reason = document.createElement('span');
         reason.textContent = exceptionReasons.length > 0
             ? `Se permite repetir porque seleccionaste: ${exceptionReasons.join(', ')}.`
-            : 'Para repetirla debes seleccionar AMAZON, GOLF TOWN o PGA.';
+            : 'Para repetirla debes seleccionar AMAZON, GOLF TOWN, PGA o SCHEELS.';
 
         notice.classList.toggle('duplicate-order-allowed', exceptionReasons.length > 0);
         notice.replaceChildren(title, order, summary, reason);
@@ -615,7 +617,7 @@ correctDateForTimezone(dateString) {
                 <td>${audit.checked_by}</td>
                 <td>${audit.build_cell}</td>
                 <td>${audit.order_number || '-'}</td>
-                <td>${audit.sh || '-'} ${audit.golftow ? '<span class="golf-town-badge" title="Orden GOLF TOWN">GOLF TOWN</span>' : ''} ${audit.pga ? '<span class="pga-badge" title="Orden PGA">PGA</span>' : ''} ${audit.amazon ? '<span class="amazon-badge" title="Orden Amazon">Amazon</span>' : ''}</td>
+                <td>${audit.sh || '-'} ${audit.golftow ? '<span class="golf-town-badge" title="Orden GOLF TOWN">GOLF TOWN</span>' : ''} ${audit.pga ? '<span class="pga-badge" title="Orden PGA">PGA</span>' : ''} ${audit.amazon ? '<span class="amazon-badge" title="Orden Amazon">Amazon</span>' : ''} ${audit.scheels ? '<span class="scheels-badge" title="Orden SCHEELS">SCHEELS</span>' : ''}</td>
                 <td>${audit.qty_of_gc_in_order || '-'}</td>
                 <td>
                     <span class="badge ${audit.errors_found ? 'badge-danger' : 'badge-success'}">
@@ -931,6 +933,11 @@ correctDateForTimezone(dateString) {
         // el estado marcado/desmarcado en Supabase.
         const amazonCheckbox = form.querySelector('[name="amazon"]');
         data.amazon = amazonCheckbox ? amazonCheckbox.checked : false;
+
+        // Checkbox SCHEELS: siempre enviar un booleano para conservar explícitamente
+        // el estado marcado/desmarcado en Supabase.
+        const scheelsCheckbox = form.querySelector('[name="scheels"]');
+        data.scheels = scheelsCheckbox ? scheelsCheckbox.checked : false;
         
         // Número - manejo especial para gc_with_errors
         const gcWithErrors = form.querySelector('[name="gc_with_errors"]');
@@ -1185,7 +1192,7 @@ async handleFormSubmit(e) {
                         </div>
                         <div class="view-field">
                             <span class="view-field-label">SH</span>
-                            <span class="view-field-value">${audit.sh || '-'} ${audit.golftow ? '<span class="golf-town-badge" title="Orden GOLF TOWN">GOLF TOWN</span>' : ''} ${audit.pga ? '<span class="pga-badge" title="Orden PGA">PGA</span>' : ''} ${audit.amazon ? '<span class="amazon-badge" title="Orden Amazon">Amazon</span>' : ''}</span>
+                            <span class="view-field-value">${audit.sh || '-'} ${audit.golftow ? '<span class="golf-town-badge" title="Orden GOLF TOWN">GOLF TOWN</span>' : ''} ${audit.pga ? '<span class="pga-badge" title="Orden PGA">PGA</span>' : ''} ${audit.amazon ? '<span class="amazon-badge" title="Orden Amazon">Amazon</span>' : ''} ${audit.scheels ? '<span class="scheels-badge" title="Orden SCHEELS">SCHEELS</span>' : ''}</span>
                         </div>
                         <div class="view-field">
                             <span class="view-field-label">QTY of GC in Order</span>
@@ -1722,10 +1729,11 @@ async getStats() {
                     'Auditor': audit.checked_by,
                     'Celda': audit.build_cell,
                     'Orden': audit.order_number || 'N/A',
-                    'SH': `${audit.sh || 'N/A'}${audit.golftow ? ' (GOLF TOWN)' : ''}${audit.pga ? ' (PGA)' : ''}${audit.amazon ? ' (Amazon)' : ''}`,
+                    'SH': `${audit.sh || 'N/A'}${audit.golftow ? ' (GOLF TOWN)' : ''}${audit.pga ? ' (PGA)' : ''}${audit.amazon ? ' (Amazon)' : ''}${audit.scheels ? ' (SCHEELS)' : ''}`,
                     'GOLF TOWN': audit.golftow ? 'Sí' : 'No',
                     'PGA': audit.pga ? 'Sí' : 'No',
                     'Amazon': audit.amazon ? 'Sí' : 'No',
+                    'SCHEELS': audit.scheels ? 'Sí' : 'No',
                     'QTY GC': audit.qty_of_gc_in_order || 0,
                     'Errores Encontrados': audit.errors_found ? 'Sí' : 'No',
                     'GC con Errores': audit.gc_with_errors || 0,
@@ -1753,6 +1761,7 @@ async getStats() {
                 { wch: 12 },  // GOLF TOWN
                 { wch: 8 },   // PGA
                 { wch: 10 },  // Amazon
+                { wch: 10 },  // SCHEELS
                 { wch: 10 },  // QTY GC
                 { wch: 12 },  // Errores
                 { wch: 12 },  // GC con errores
@@ -1836,10 +1845,11 @@ async getStats() {
                     audit.checked_by,
                     audit.build_cell,
                     audit.order_number || 'N/A',
-                    `${audit.sh || 'N/A'}${audit.golftow ? ' (GOLF TOWN)' : ''}${audit.pga ? ' (PGA)' : ''}${audit.amazon ? ' (Amazon)' : ''}`,
+                    `${audit.sh || 'N/A'}${audit.golftow ? ' (GOLF TOWN)' : ''}${audit.pga ? ' (PGA)' : ''}${audit.amazon ? ' (Amazon)' : ''}${audit.scheels ? ' (SCHEELS)' : ''}`,
                     audit.golftow ? 'Sí' : 'No',
                     audit.pga ? 'Sí' : 'No',
                     audit.amazon ? 'Sí' : 'No',
+                    audit.scheels ? 'Sí' : 'No',
                     (audit.qty_of_gc_in_order || 0).toString(),
                     audit.errors_found ? 'Sí' : 'No',
                     (audit.gc_with_errors || 0).toString(),
@@ -1848,7 +1858,7 @@ async getStats() {
             });
             
             // Configurar tabla
-            const tableHeaders = ['N°', 'Fecha', 'Auditor', 'Celda', 'Orden', 'SH', 'GOLF TOWN', 'PGA', 'Amazon', 'QTY GC', 'Errores', 'GC Errores', 'Total Err'];
+            const tableHeaders = ['N°', 'Fecha', 'Auditor', 'Celda', 'Orden', 'SH', 'GOLF TOWN', 'PGA', 'Amazon', 'SCHEELS', 'QTY GC', 'Errores', 'GC Errores', 'Total Err'];
             
             // Generar tabla
             doc.autoTable({
@@ -1878,10 +1888,11 @@ async getStats() {
                     6: { cellWidth: 15 }, // GOLF TOWN
                     7: { cellWidth: 15 }, // PGA
                     8: { cellWidth: 15 }, // Amazon
-                    9: { cellWidth: 18 }, // QTY GC
-                    10: { cellWidth: 18 }, // Errores
-                    11: { cellWidth: 18 }, // GC Errores
-                    12: { cellWidth: 18 }  // Total Err
+                    9: { cellWidth: 15 }, // SCHEELS
+                    10: { cellWidth: 18 }, // QTY GC
+                    11: { cellWidth: 18 }, // Errores
+                    12: { cellWidth: 18 }, // GC Errores
+                    13: { cellWidth: 18 }  // Total Err
                 },
                 margin: { top: 45, right: 10, bottom: 10, left: 10 },
                 didDrawPage: (data) => {

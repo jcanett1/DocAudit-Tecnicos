@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS public.dotaudit (
     golftow BOOLEAN NOT NULL DEFAULT FALSE,
     pga BOOLEAN NOT NULL DEFAULT FALSE,
     amazon BOOLEAN NOT NULL DEFAULT FALSE,
+    scheels BOOLEAN NOT NULL DEFAULT FALSE,
     qty_of_gc_in_order INTEGER,
     errors_found BOOLEAN NOT NULL,
     gc_with_errors INTEGER,
@@ -40,7 +41,8 @@ CREATE TABLE IF NOT EXISTS public.dotaudit (
 
 -- La columna también se agrega de forma idempotente para instalaciones existentes.
 ALTER TABLE public.dotaudit
-    ADD COLUMN IF NOT EXISTS amazon BOOLEAN NOT NULL DEFAULT FALSE;
+    ADD COLUMN IF NOT EXISTS amazon BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS scheels BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- Crear índices para mejorar el rendimiento
 CREATE INDEX IF NOT EXISTS idx_dotaudit_audit_date ON public.dotaudit(audit_date);
@@ -88,6 +90,7 @@ COMMENT ON COLUMN public.dotaudit.errors_found IS 'Indica si se encontraron erro
 COMMENT ON COLUMN public.dotaudit.golftow IS 'Indica si la orden corresponde a GOLF TOWN';
 COMMENT ON COLUMN public.dotaudit.pga IS 'Indica si la orden corresponde a PGA';
 COMMENT ON COLUMN public.dotaudit.amazon IS 'Indica si la orden corresponde a Amazon';
+COMMENT ON COLUMN public.dotaudit.scheels IS 'Indica si la orden corresponde a SCHEELS';
 COMMENT ON COLUMN public.dotaudit.gc_with_errors IS 'Cantidad de palos de golf con errores';
 COMMENT ON COLUMN public.dotaudit.notes IS 'Notas adicionales sobre la auditoría';
 
