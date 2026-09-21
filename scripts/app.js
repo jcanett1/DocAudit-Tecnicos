@@ -458,7 +458,13 @@ correctDateForTimezone(dateString) {
             cellOption.textContent = `Celda ${buildCell.value}`;
             options.appendChild(cellOption);
         } else if (source && source !== 'cell') {
-            (groups[source] || []).forEach(operatorName => {
+            const operatorNames = [...(groups[source] || [])];
+            if (source === 'production') {
+                operatorNames.sort((firstName, secondName) =>
+                    firstName.localeCompare(secondName, 'es', { sensitivity: 'base' })
+                );
+            }
+            operatorNames.forEach(operatorName => {
                 const option = document.createElement('option');
                 option.value = operatorName;
                 option.textContent = operatorName;
