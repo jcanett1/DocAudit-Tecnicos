@@ -23,6 +23,11 @@ const CONFIG = {
     OPERATOR_GROUPS: {
         production: [
             'MANRRIQUEZ/MORENO/GRACIELA',
+            'garcia esquer emyr alfredo',
+            'gil mora valeria azul',
+            'valdez guzmán miranda janeth',
+            'RUELAS ALONSO NICOLÁS AGUSTÍN',
+            'Rentería Gutiérrez Jesús René',
             'MORENO/YESCAS/FABIOLA',
             'MORENO/GUTIERREZ/BLANCA PATRICIA',
             'LUGO/ZAMORANO/DOLORES IRENE',
