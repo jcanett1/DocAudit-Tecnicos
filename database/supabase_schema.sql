@@ -16,6 +16,9 @@ CREATE TABLE IF NOT EXISTS public.dotaudit (
     scheels BOOLEAN NOT NULL DEFAULT FALSE,
     qty_of_gc_in_order INTEGER,
     errors_found BOOLEAN NOT NULL,
+    allowance_found BOOLEAN NOT NULL DEFAULT FALSE,
+    allowance_loft_lie BOOLEAN NOT NULL DEFAULT FALSE,
+    allowance_swing_weight BOOLEAN NOT NULL DEFAULT FALSE,
     gc_with_errors INTEGER,
     -- Error types per GC (valores 0-4)
     components_error INTEGER DEFAULT 0 CHECK (components_error >= 0 AND components_error <= 4),
@@ -42,7 +45,10 @@ CREATE TABLE IF NOT EXISTS public.dotaudit (
 -- La columna también se agrega de forma idempotente para instalaciones existentes.
 ALTER TABLE public.dotaudit
     ADD COLUMN IF NOT EXISTS amazon BOOLEAN NOT NULL DEFAULT FALSE,
-    ADD COLUMN IF NOT EXISTS scheels BOOLEAN NOT NULL DEFAULT FALSE;
+    ADD COLUMN IF NOT EXISTS scheels BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS allowance_found BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS allowance_loft_lie BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS allowance_swing_weight BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- Crear índices para mejorar el rendimiento
 CREATE INDEX IF NOT EXISTS idx_dotaudit_audit_date ON public.dotaudit(audit_date);
@@ -91,6 +97,9 @@ COMMENT ON COLUMN public.dotaudit.golftow IS 'Indica si la orden corresponde a G
 COMMENT ON COLUMN public.dotaudit.pga IS 'Indica si la orden corresponde a PGA';
 COMMENT ON COLUMN public.dotaudit.amazon IS 'Indica si la orden corresponde a Amazon';
 COMMENT ON COLUMN public.dotaudit.scheels IS 'Indica si la orden corresponde a SCHEELS';
+COMMENT ON COLUMN public.dotaudit.allowance_found IS 'Indica si la auditoría fue revisada bajo TOLERANCIA / ALLOWANCE';
+COMMENT ON COLUMN public.dotaudit.allowance_loft_lie IS 'Indica que Loft & Lie fue revisado bajo TOLERANCIA / ALLOWANCE';
+COMMENT ON COLUMN public.dotaudit.allowance_swing_weight IS 'Indica que Swing Weight fue revisado bajo TOLERANCIA / ALLOWANCE';
 COMMENT ON COLUMN public.dotaudit.gc_with_errors IS 'Cantidad de palos de golf con errores';
 COMMENT ON COLUMN public.dotaudit.notes IS 'Notas adicionales sobre la auditoría';
 
@@ -125,6 +134,47 @@ CREATE POLICY "Habilitar inserción para todos" ON public.dotaudit_images
 
 CREATE POLICY "Habilitar eliminación para todos" ON public.dotaudit_images
     FOR DELETE USING (true);
+
+-- ============================================================
+-- TABLA: dotaudit_measurements
+-- Almacena las lecturas por palo usadas para errores o allowance.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.dotaudit_measurements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    dotaudit_id UUID NOT NULL REFERENCES public.dotaudit(id) ON DELETE CASCADE,
+    club_slot SMALLINT NOT NULL CHECK (club_slot BETWEEN 1 AND 9),
+    required_loft NUMERIC(6, 2),
+    actual_loft NUMERIC(6, 2),
+    required_lie NUMERIC(6, 2),
+    actual_lie NUMERIC(6, 2),
+    required_swing_weight VARCHAR(12),
+    actual_swing_weight VARCHAR(12),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_dotaudit_measurements_audit_slot UNIQUE (dotaudit_id, club_slot)
+);
+
+CREATE INDEX IF NOT EXISTS idx_dotaudit_measurements_audit_id
+    ON public.dotaudit_measurements (dotaudit_id);
+
+ALTER TABLE public.dotaudit_measurements ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Permitir lectura de mediciones" ON public.dotaudit_measurements;
+CREATE POLICY "Permitir lectura de mediciones"
+    ON public.dotaudit_measurements FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Permitir inserción de mediciones" ON public.dotaudit_measurements;
+CREATE POLICY "Permitir inserción de mediciones"
+    ON public.dotaudit_measurements FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Permitir actualización de mediciones" ON public.dotaudit_measurements;
+CREATE POLICY "Permitir actualización de mediciones"
+    ON public.dotaudit_measurements FOR UPDATE USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Permitir eliminación de mediciones" ON public.dotaudit_measurements;
+CREATE POLICY "Permitir eliminación de mediciones"
+    ON public.dotaudit_measurements FOR DELETE USING (true);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.dotaudit_measurements TO anon, authenticated;
+
+COMMENT ON TABLE public.dotaudit_measurements IS
+    'Mediciones por palo capturadas para errores o TOLERANCIA / ALLOWANCE';
+COMMENT ON COLUMN public.dotaudit_measurements.club_slot IS 'Posición del palo en la matriz (1 a 9)';
 
 -- ============================================================
 -- STORAGE: Bucket dotaudit-images

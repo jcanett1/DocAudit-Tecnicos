@@ -359,6 +359,10 @@ class AuditAPI {
             }
         }
 
+        if (data.allowance_found && !data.allowance_loft_lie && !data.allowance_swing_weight) {
+            errors.push('Si marcas TOLERANCIA / ALLOWANCE, selecciona Loft & Lie o Swing Weight');
+        }
+
         return {
             isValid: errors.length === 0,
             errors: errors
@@ -383,6 +387,9 @@ class AuditAPI {
             scheels: audit.scheels === true,
             qty_of_gc_in_order: audit.qty_of_gc_in_order || '',
             errors_found: audit.errors_found || false,
+            allowance_found: audit.allowance_found === true,
+            allowance_loft_lie: audit.allowance_loft_lie === true,
+            allowance_swing_weight: audit.allowance_swing_weight === true,
             gc_with_errors: audit.gc_with_errors || '',
             components_error: audit.components_error || 0,
             tipping_error: audit.tipping_error || 0,
@@ -486,6 +493,49 @@ class AuditAPI {
         await this.request(endpoint, { method: 'DELETE' });
     }
 
+    async getAuditMeasurements(dotauditId) {
+        try {
+            const fields = 'club_slot,required_loft,actual_loft,required_lie,actual_lie,required_swing_weight,actual_swing_weight';
+            const endpoint = `/rest/v1/dotaudit_measurements?dotaudit_id=eq.${encodeURIComponent(dotauditId)}&select=${fields}&order=club_slot.asc`;
+            const response = await this.request(endpoint);
+            return Array.isArray(response) ? response : [];
+        } catch (error) {
+            console.error('Error obteniendo las mediciones de la auditoría:', error);
+            return [];
+        }
+    }
+
+    async saveAuditMeasurements(dotauditId, measurements = []) {
+        const endpoint = `/rest/v1/dotaudit_measurements?dotaudit_id=eq.${encodeURIComponent(dotauditId)}`;
+        const fields = [
+            'required_loft', 'actual_loft', 'required_lie', 'actual_lie',
+            'required_swing_weight', 'actual_swing_weight'
+        ];
+        const rowsBySlot = new Map((measurements || []).map(row => [Number(row.club_slot), row]));
+        const rows = Array.from({ length: 9 }, (_, index) => {
+            const slot = index + 1;
+            const source = rowsBySlot.get(slot) || {};
+            const row = { dotaudit_id: dotauditId, club_slot: slot };
+            fields.forEach(field => {
+                row[field] = source[field] === undefined || source[field] === '' ? null : source[field];
+            });
+            return row;
+        });
+        const hasMeasurements = rows.some(row => fields.some(field => row[field] !== null));
+
+        if (!hasMeasurements) {
+            await this.request(endpoint, { method: 'DELETE' });
+            return;
+        }
+
+        const upsertEndpoint = `/rest/v1/dotaudit_measurements?on_conflict=dotaudit_id,club_slot`;
+        await this.request(upsertEndpoint, {
+            method: 'POST',
+            headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+            body: JSON.stringify(rows)
+        });
+    }
+
     // Formatear datos del formulario para la API
     formatFormData(formData) {
         const data = {};
@@ -530,6 +580,9 @@ class AuditAPI {
                           formData.errors_found === 'on' || 
                           formData.errors_found === 1 || 
                           formData.errors_found === '1';
+        data.allowance_found = formData.allowance_found === true || formData.allowance_found === 'true' || formData.allowance_found === 'on' || formData.allowance_found === 1;
+        data.allowance_loft_lie = data.allowance_found && (formData.allowance_loft_lie === true || formData.allowance_loft_lie === 'true' || formData.allowance_loft_lie === 'on' || formData.allowance_loft_lie === 1);
+        data.allowance_swing_weight = data.allowance_found && (formData.allowance_swing_weight === true || formData.allowance_swing_weight === 'true' || formData.allowance_swing_weight === 'on' || formData.allowance_swing_weight === 1);
         
         // Si errors_found es true, gc_with_errors debe ser al menos 1
         if (data.errors_found && data.gc_with_errors === 0) {

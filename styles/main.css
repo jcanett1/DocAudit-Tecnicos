@@ -741,6 +741,102 @@ tbody tr:last-child td {
     gap: 1rem;
 }
 
+.allowance-section {
+    border-left: 4px solid #6c63ff;
+}
+
+.allowance-options {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 0.8rem;
+    padding: 1rem;
+    border-radius: 8px;
+    background: #f5f4ff;
+}
+
+.allowance-options .section-note {
+    margin: 0;
+}
+
+.measurement-section {
+    grid-column: 1 / -1;
+    min-width: 0;
+}
+
+.measurement-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #a9a39b;
+    border-radius: 6px;
+}
+
+.measurement-table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+}
+
+.measurement-table th,
+.measurement-table td {
+    min-width: 76px;
+    padding: 0.45rem 0.35rem;
+    border: 1px solid #8e8982;
+    text-align: center;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.measurement-table thead th {
+    background: #e6e3dd;
+    color: #282522;
+    font-size: 0.75rem;
+}
+
+.measurement-table tbody th {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 112px;
+    background: #f2f0ec;
+    color: #282522;
+    text-align: left;
+    font-size: 0.75rem;
+}
+
+.measurement-table .measurement-input {
+    width: 70px;
+    min-height: 34px;
+    padding: 0.3rem;
+    text-align: center;
+}
+
+.view-measurements-section {
+    margin-bottom: 1.25rem;
+    padding: 1rem 1.25rem;
+    border: 1.5px solid rgba(102, 99, 255, 0.18);
+    border-radius: 10px;
+    background: rgba(102, 99, 255, 0.035);
+}
+
+.view-measurements-table {
+    width: max-content;
+    min-width: 900px;
+    border-collapse: collapse;
+}
+
+.view-measurements-table th,
+.view-measurements-table td {
+    padding: 0.55rem;
+    border: 1px solid #d5d3cf;
+    text-align: left;
+}
+
+.view-measurements-table th {
+    background: #eceaf7;
+    color: #34304e;
+}
+
 .error-type {
     display: flex;
     flex-direction: column;

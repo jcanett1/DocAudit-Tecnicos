@@ -102,6 +102,7 @@
                                     <th>SH</th>
                                     <th>QTY GC</th>
                                     <th>Errores</th>
+                                    <th>Tolerancia / Allowance</th>
                                     <th>GC con Errores</th>
                                     <th>Acciones</th>
                                 </tr>
@@ -472,6 +473,28 @@
                         </div>
                     </div>
 
+                    <!-- Tolerancia / Allowance -->
+                    <div class="form-section allowance-section" id="allowanceSection">
+                        <h3><i class="fas fa-ruler-combined"></i> TOLERANCIA / ALLOWANCE</h3>
+                        <div class="form-group">
+                            <label class="checkbox-label" for="allowance_found">
+                                <input type="checkbox" id="allowance_found" name="allowance_found">
+                                ¿Se revisó bajo tolerancia / allowance?
+                            </label>
+                        </div>
+                        <div id="allowanceOptionsPanel" class="allowance-options" style="display: none;">
+                            <p class="section-note">Selecciona solamente los tipos revisados bajo tolerancia:</p>
+                            <label class="checkbox-label" for="allowance_loft_lie">
+                                <input type="checkbox" id="allowance_loft_lie" name="allowance_loft_lie">
+                                Loft &amp; Lie
+                            </label>
+                            <label class="checkbox-label" for="allowance_swing_weight">
+                                <input type="checkbox" id="allowance_swing_weight" name="allowance_swing_weight">
+                                Swing Weight
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- Imágenes de Errores -->
                     <div class="form-section" id="imagesSection" style="display: none;">
                         <h3><i class="fas fa-camera"></i> Imágenes de Evidencia</h3>
@@ -575,6 +598,19 @@
                                 <input type="number" id="boxing_error" name="boxing_error" min="0" value="0" placeholder="0" style="width: 60px; text-align: center;">
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Matrices para lecturas asociadas a errores o a TOLERANCIA / ALLOWANCE -->
+                    <div class="form-section measurement-section" id="loftLieMeasurementsSection" style="display: none;">
+                        <h3><i class="fas fa-ruler-horizontal"></i> Loft &amp; Lie</h3>
+                        <p class="section-note">Captura los valores requeridos y actuales por palo. La matriz tiene nueve espacios, como el formato de referencia.</p>
+                        <div id="loftLieMatrixContainer" class="measurement-table-wrap"></div>
+                    </div>
+
+                    <div class="form-section measurement-section" id="swingWeightMeasurementsSection" style="display: none;">
+                        <h3><i class="fas fa-balance-scale"></i> Swing Weight</h3>
+                        <p class="section-note">Captura los valores requeridos y actuales por palo (por ejemplo, D2).</p>
+                        <div id="swingWeightMatrixContainer" class="measurement-table-wrap"></div>
                     </div>
 
                     <!-- Notas -->

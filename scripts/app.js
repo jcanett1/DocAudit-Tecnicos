@@ -140,6 +140,8 @@ correctDateForTimezone(dateString) {
 
     // Vincular eventos
     bindEvents() {
+        this.initializeMeasurementMatrices();
+
         // Botones del header
         document.getElementById('newAuditBtn')?.addEventListener('click', () => this.openModal());
 
@@ -190,6 +192,22 @@ correctDateForTimezone(dateString) {
             this.updateOperatorSelectionState();
         });
 
+        document.getElementById('allowance_found')?.addEventListener('change', () => this.refreshMeasurementVisibility());
+        document.getElementById('allowance_loft_lie')?.addEventListener('change', () => this.refreshMeasurementVisibility());
+        document.getElementById('allowance_swing_weight')?.addEventListener('change', () => this.refreshMeasurementVisibility());
+
+        const auditForm = document.getElementById('auditForm');
+        auditForm?.addEventListener('input', (event) => {
+            if (event.target.matches('.measurement-input') || ['loft_error', 'lie_error', 'swing_weight_error'].includes(event.target.name)) {
+                this.refreshMeasurementVisibility();
+            }
+        });
+        auditForm?.addEventListener('change', (event) => {
+            if (event.target.matches('.measurement-input') || ['loft_error', 'lie_error', 'swing_weight_error'].includes(event.target.name)) {
+                this.refreshMeasurementVisibility();
+            }
+        });
+
         // Selector de operadores: las fuentes son exclusivas y sus opciones
         // se mantienen en el frontend, sin consultar ni modificar la base de datos.
         this.bindOperatorSelectorEvents();
@@ -201,6 +219,110 @@ correctDateForTimezone(dateString) {
         document.querySelector('.notification-close')?.addEventListener('click', () => {
             this.hideNotification();
         });
+    }
+
+    initializeMeasurementMatrices() {
+        const matrices = [
+            {
+                containerId: 'loftLieMatrixContainer',
+                title: 'Loft & Lie',
+                fields: [
+                    { key: 'required_loft', label: 'Required Loft', type: 'number' },
+                    { key: 'actual_loft', label: 'Actual Loft', type: 'number' },
+                    { key: 'required_lie', label: 'Required Lie', type: 'number' },
+                    { key: 'actual_lie', label: 'Actual Lie', type: 'number' }
+                ]
+            },
+            {
+                containerId: 'swingWeightMatrixContainer',
+                title: 'Swing Weight',
+                fields: [
+                    { key: 'required_swing_weight', label: 'Required Swing Weight', type: 'text' },
+                    { key: 'actual_swing_weight', label: 'Actual Swing Weight', type: 'text' }
+                ]
+            }
+        ];
+
+        matrices.forEach(({ containerId, title, fields }) => {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const headers = Array.from({ length: 9 }, (_, index) => `<th scope="col">GC ${index + 1}</th>`).join('');
+            const rows = fields.map(field => `
+                <tr>
+                    <th scope="row">${field.label}</th>
+                    ${Array.from({ length: 9 }, (_, index) => {
+                        const slot = index + 1;
+                        const name = `${field.key}_${slot}`;
+                        const numericAttributes = field.type === 'number' ? 'inputmode="decimal" step="0.1"' : 'maxlength="12"';
+                        return `<td><input class="measurement-input" type="${field.type}" id="${name}" name="${name}" ${numericAttributes} aria-label="GC ${slot}: ${field.label}"></td>`;
+                    }).join('')}
+                </tr>
+            `).join('');
+            container.innerHTML = `
+                <table class="measurement-table" aria-label="Matriz de ${title}">
+                    <thead><tr><th scope="col">${title}</th>${headers}</tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            `;
+        });
+        this.refreshMeasurementVisibility();
+    }
+
+    refreshMeasurementVisibility() {
+        const isChecked = (id) => document.getElementById(id)?.checked === true;
+        const numericValue = (id) => Number.parseFloat(document.getElementById(id)?.value || '0') || 0;
+        const allowanceFound = isChecked('allowance_found');
+        const optionsPanel = document.getElementById('allowanceOptionsPanel');
+        if (optionsPanel) optionsPanel.style.display = allowanceFound ? 'grid' : 'none';
+
+        const errorsFound = isChecked('errors_found');
+        const showLoftLie = (errorsFound && (numericValue('loft_error') > 0 || numericValue('lie_error') > 0)) ||
+            (allowanceFound && isChecked('allowance_loft_lie'));
+        const showSwingWeight = (errorsFound && numericValue('swing_weight_error') > 0) ||
+            (allowanceFound && isChecked('allowance_swing_weight'));
+
+        const loftSection = document.getElementById('loftLieMeasurementsSection');
+        const swingSection = document.getElementById('swingWeightMeasurementsSection');
+        if (loftSection) loftSection.style.display = showLoftLie ? 'block' : 'none';
+        if (swingSection) swingSection.style.display = showSwingWeight ? 'block' : 'none';
+    }
+
+    extractMeasurementRows(form) {
+        const fields = [
+            'required_loft', 'actual_loft', 'required_lie', 'actual_lie',
+            'required_swing_weight', 'actual_swing_weight'
+        ];
+        return Array.from({ length: 9 }, (_, index) => {
+            const row = { club_slot: index + 1 };
+            fields.forEach(field => {
+                const input = form.querySelector(`[name="${field}_${index + 1}"]`);
+                const raw = String(input?.value || '').trim();
+                if (field.includes('swing_weight')) {
+                    row[field] = raw || null;
+                } else {
+                    row[field] = raw === '' ? null : Number(raw);
+                }
+            });
+            return row;
+        }).filter(row => fields.some(field => row[field] !== null));
+    }
+
+    populateMeasurementInputs(rows = []) {
+        rows.forEach(row => {
+            const slot = Number(row.club_slot);
+            if (!Number.isInteger(slot) || slot < 1 || slot > 9) return;
+            Object.keys(row).forEach(key => {
+                if (key === 'club_slot') return;
+                const input = document.getElementById(`${key}_${slot}`);
+                if (input) input.value = row[key] ?? '';
+            });
+        });
+    }
+
+    escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, character => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[character]);
     }
 
     clearDuplicateOrderNotice() {
@@ -630,6 +752,11 @@ correctDateForTimezone(dateString) {
                         ${audit.errors_found ? 'Sí' : 'No'}
                     </span>
                 </td>
+                <td>
+                    ${audit.allowance_found
+                        ? [audit.allowance_loft_lie ? 'Loft &amp; Lie' : '', audit.allowance_swing_weight ? 'Swing Weight' : ''].filter(Boolean).join(', ') || 'Tolerancia'
+                        : '-'}
+                </td>
                 <td>${audit.gc_with_errors || 0}</td>
                 <td>
                     <div class="action-buttons">
@@ -746,6 +873,7 @@ correctDateForTimezone(dateString) {
         try {
             const audit = await window.auditAPI.getAudit(auditId);
             const formData = window.auditAPI.formatAuditForForm(audit);
+            const measurements = await window.auditAPI.getAuditMeasurements(auditId);
             
             // Llenar formulario
             Object.keys(formData).forEach(key => {
@@ -758,6 +886,8 @@ correctDateForTimezone(dateString) {
                     }
                 }
             });
+
+            this.populateMeasurementInputs(measurements);
 
             this.restoreOperatorSelector(formData.operadores, formData.build_cell);
 
@@ -778,6 +908,7 @@ correctDateForTimezone(dateString) {
                 element.style.display = show ? 'block' : 'none';
             }
         });
+        this.refreshMeasurementVisibility();
         // Limpiar previews si se oculta
         if (!show) {
             this.pendingImages = [];
@@ -925,6 +1056,12 @@ correctDateForTimezone(dateString) {
             data.errors_found = checkbox.checked;
         }
 
+        const allowanceCheckbox = form.querySelector('[name="allowance_found"]');
+        data.allowance_found = allowanceCheckbox?.checked === true;
+        data.allowance_loft_lie = data.allowance_found && form.querySelector('[name="allowance_loft_lie"]')?.checked === true;
+        data.allowance_swing_weight = data.allowance_found && form.querySelector('[name="allowance_swing_weight"]')?.checked === true;
+        data.measurements = this.extractMeasurementRows(form);
+
         // Checkbox GOLF TOWN: siempre enviar un booleano para que la base de datos
         // conserve explícitamente el estado marcado/desmarcado.
         const golfTownCheckbox = form.querySelector('[name="golftow"]');
@@ -1057,6 +1194,10 @@ async handleFormSubmit(e) {
             savedAuditId = created && created.id ? created.id : null;
         }
 
+        if (savedAuditId) {
+            await window.auditAPI.saveAuditMeasurements(savedAuditId, data.measurements || []);
+        }
+
         // Subir imágenes pendientes si hay errores y hay imágenes
         const imagesToUpload = this.pendingImages.filter(Boolean);
         if (savedAuditId && imagesToUpload.length > 0) {
@@ -1126,6 +1267,7 @@ async handleFormSubmit(e) {
         if (!container) return;
 
         const hasErrors = audit.errors_found;
+        const measurements = await window.auditAPI.getAuditMeasurements(audit.id);
         const orderLabel = audit.order_number || '(sin número)';
 
         if (titleEl) {
@@ -1259,6 +1401,48 @@ async handleFormSubmit(e) {
                         <i class="fas fa-exclamation-triangle"></i> Errores Registrados
                     </h3>
                     <p class="no-data-inline">Se marcó con errores pero no se especificaron tipos de error.</p>
+                </div>
+            `;
+        }
+
+        if (audit.allowance_found) {
+            const allowanceTypes = [
+                audit.allowance_loft_lie ? 'Loft & Lie' : '',
+                audit.allowance_swing_weight ? 'Swing Weight' : ''
+            ].filter(Boolean);
+            html += `
+                <div class="view-measurements-section">
+                    <h3 class="view-section-title"><i class="fas fa-ruler-combined"></i> TOLERANCIA / ALLOWANCE</h3>
+                    <p>${allowanceTypes.length ? allowanceTypes.map(type => this.escapeHtml(type)).join(' · ') : 'Marcada sin categorías específicas.'}</p>
+                </div>
+            `;
+        }
+
+        const populatedMeasurements = measurements.filter(row => [
+            'required_loft', 'actual_loft', 'required_lie', 'actual_lie',
+            'required_swing_weight', 'actual_swing_weight'
+        ].some(field => row[field] !== null && row[field] !== undefined && row[field] !== ''));
+        if (populatedMeasurements.length > 0) {
+            const measurementValue = value => value === null || value === undefined || value === '' ? '-' : this.escapeHtml(value);
+            html += `
+                <div class="view-measurements-section">
+                    <h3 class="view-section-title"><i class="fas fa-ruler-horizontal"></i> Lecturas Loft, Lie y Swing Weight</h3>
+                    <div class="measurement-table-wrap">
+                        <table class="view-measurements-table">
+                            <thead><tr><th>Palo</th><th>Required Loft</th><th>Actual Loft</th><th>Required Lie</th><th>Actual Lie</th><th>Required Swing Weight</th><th>Actual Swing Weight</th></tr></thead>
+                            <tbody>${populatedMeasurements.map(row => `
+                                <tr>
+                                    <td>GC ${this.escapeHtml(row.club_slot)}</td>
+                                    <td>${measurementValue(row.required_loft)}</td>
+                                    <td>${measurementValue(row.actual_loft)}</td>
+                                    <td>${measurementValue(row.required_lie)}</td>
+                                    <td>${measurementValue(row.actual_lie)}</td>
+                                    <td>${measurementValue(row.required_swing_weight)}</td>
+                                    <td>${measurementValue(row.actual_swing_weight)}</td>
+                                </tr>
+                            `).join('')}</tbody>
+                        </table>
+                    </div>
                 </div>
             `;
         }
@@ -1742,6 +1926,9 @@ async getStats() {
                     'SCHEELS': audit.scheels ? 'Sí' : 'No',
                     'QTY GC': audit.qty_of_gc_in_order || 0,
                     'Errores Encontrados': audit.errors_found ? 'Sí' : 'No',
+                    'Tolerancia / Allowance': audit.allowance_found
+                        ? [audit.allowance_loft_lie ? 'Loft & Lie' : '', audit.allowance_swing_weight ? 'Swing Weight' : ''].filter(Boolean).join(', ') || 'Sí'
+                        : 'No',
                     'GC con Errores': audit.gc_with_errors || 0,
                     'Total Errores': totalErrors,
                     'Operadores': audit.operadores || 'N/A',
@@ -1770,6 +1957,7 @@ async getStats() {
                 { wch: 10 },  // SCHEELS
                 { wch: 10 },  // QTY GC
                 { wch: 12 },  // Errores
+                { wch: 24 },  // Tolerancia / Allowance
                 { wch: 12 },  // GC con errores
                 { wch: 12 },  // Total errores
                 { wch: 15 },  // Operadores
@@ -1858,13 +2046,16 @@ async getStats() {
                     audit.scheels ? 'Sí' : 'No',
                     (audit.qty_of_gc_in_order || 0).toString(),
                     audit.errors_found ? 'Sí' : 'No',
+                    audit.allowance_found
+                        ? [audit.allowance_loft_lie ? 'Loft & Lie' : '', audit.allowance_swing_weight ? 'Swing Weight' : ''].filter(Boolean).join(', ') || 'Sí'
+                        : 'No',
                     (audit.gc_with_errors || 0).toString(),
                     totalErrors.toString()
                 ];
             });
             
             // Configurar tabla
-            const tableHeaders = ['N°', 'Fecha', 'Auditor', 'Celda', 'Orden', 'SH', 'GOLF TOWN', 'PGA', 'Amazon', 'SCHEELS', 'QTY GC', 'Errores', 'GC Errores', 'Total Err'];
+            const tableHeaders = ['N°', 'Fecha', 'Auditor', 'Celda', 'Orden', 'SH', 'GOLF TOWN', 'PGA', 'Amazon', 'SCHEELS', 'QTY GC', 'Errores', 'Tolerancia / Allowance', 'GC Errores', 'Total Err'];
             
             // Generar tabla
             doc.autoTable({
@@ -1897,8 +2088,9 @@ async getStats() {
                     9: { cellWidth: 15 }, // SCHEELS
                     10: { cellWidth: 18 }, // QTY GC
                     11: { cellWidth: 18 }, // Errores
-                    12: { cellWidth: 18 }, // GC Errores
-                    13: { cellWidth: 18 }  // Total Err
+                    12: { cellWidth: 25 }, // Tolerancia / Allowance
+                    13: { cellWidth: 18 }, // GC Errores
+                    14: { cellWidth: 18 }  // Total Err
                 },
                 margin: { top: 45, right: 10, bottom: 10, left: 10 },
                 didDrawPage: (data) => {
