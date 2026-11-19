@@ -166,7 +166,7 @@ class StatsModule {
 
     // ── Renderizar todo ──────────────────────────────────────
     renderAll() {
-        this.renderSummaryCards();       // incluye tarjeta de imágenes y GOLF TOWN
+        this.renderSummaryCards();       // incluye indicadores de errores, canales y allowance
         this.renderDailyTable();
         this.renderGolfTownTable();
         this.renderPgaTable();
@@ -197,6 +197,9 @@ class StatsModule {
         const golfTownCount = this.data.filter(a => a.golftow === true).length;
         const pgaCount       = this.data.filter(a => a.pga === true).length;
         const amazonCount    = this.data.filter(a => a.amazon === true).length;
+        const allowanceCount = this.data.filter(a => a.allowance_found === true).length;
+        const allowanceLoftLieCount = this.data.filter(a => a.allowance_found === true && a.allowance_loft_lie === true).length;
+        const allowanceSwingWeightCount = this.data.filter(a => a.allowance_found === true && a.allowance_swing_weight === true).length;
 
         container.innerHTML = `
             <div class="stat-card stat-blue">
@@ -249,6 +252,21 @@ class StatsModule {
                 <div class="stat-value">${amazonCount}</div>
                 <div class="stat-label">Registros Amazon</div>
             </div>
+            <div class="stat-card stat-allowance">
+                <div class="stat-icon"><i class="fas fa-ruler-combined"></i></div>
+                <div class="stat-value">${allowanceCount}</div>
+                <div class="stat-label">Auditorías con TOLERANCIA / ALLOWANCE</div>
+            </div>
+            <div class="stat-card stat-allowance-loft">
+                <div class="stat-icon"><i class="fas fa-ruler-horizontal"></i></div>
+                <div class="stat-value">${allowanceLoftLieCount}</div>
+                <div class="stat-label">Allowance: Loft &amp; Lie</div>
+            </div>
+            <div class="stat-card stat-allowance-swing">
+                <div class="stat-icon"><i class="fas fa-balance-scale"></i></div>
+                <div class="stat-value">${allowanceSwingWeightCount}</div>
+                <div class="stat-label">Allowance: Swing Weight</div>
+            </div>
         `;
     }
 
@@ -260,7 +278,7 @@ class StatsModule {
         const byDate = {};
         this.data.forEach(a => {
             const d = a.audit_date || 'Sin fecha';
-            if (!byDate[d]) byDate[d] = { total: 0, withErrors: 0, noErrors: 0, gcErrors: 0, golfTown: 0, pga: 0, amazon: 0, orders: new Set() };
+            if (!byDate[d]) byDate[d] = { total: 0, withErrors: 0, noErrors: 0, gcErrors: 0, golfTown: 0, pga: 0, amazon: 0, allowance: 0, allowanceLoftLie: 0, allowanceSwingWeight: 0, orders: new Set() };
             byDate[d].total++;
             if (a.golftow === true) byDate[d].golfTown++;
             if (a.pga === true) byDate[d].pga++;
@@ -268,6 +286,11 @@ class StatsModule {
             if (a.errors_found) byDate[d].withErrors++;
             else byDate[d].noErrors++;
             byDate[d].gcErrors += parseInt(a.gc_with_errors) || 0;
+            if (a.allowance_found === true) {
+                byDate[d].allowance++;
+                if (a.allowance_loft_lie === true) byDate[d].allowanceLoftLie++;
+                if (a.allowance_swing_weight === true) byDate[d].allowanceSwingWeight++;
+            }
             if (a.order_number) byDate[d].orders.add(a.order_number);
         });
 
@@ -286,6 +309,9 @@ class StatsModule {
                         <th>GOLF TOWN</th>
                         <th>PGA</th>
                         <th>Amazon</th>
+                        <th>Allowance</th>
+                        <th>Loft &amp; Lie</th>
+                        <th>Swing Weight</th>
                         <th>Sin Errores</th>
                         <th>Con Errores</th>
                         <th>GC con Errores</th>
@@ -307,6 +333,9 @@ class StatsModule {
                     <td class="text-center"><span class="golf-town-count ${row.golfTown > 0 ? 'is-active' : ''}">${row.golfTown}</span></td>
                     <td class="text-center"><span class="pga-count ${row.pga > 0 ? 'is-active' : ''}">${row.pga}</span></td>
                     <td class="text-center"><span class="amazon-count ${row.amazon > 0 ? 'is-active' : ''}">${row.amazon}</span></td>
+                    <td class="text-center">${row.allowance}</td>
+                    <td class="text-center">${row.allowanceLoftLie}</td>
+                    <td class="text-center">${row.allowanceSwingWeight}</td>
                     <td class="text-center text-green">${row.noErrors}</td>
                     <td class="text-center text-red">${row.withErrors}</td>
                     <td class="text-center">${row.gcErrors}</td>

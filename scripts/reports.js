@@ -176,6 +176,9 @@ class ReportsModule {
             const golfTownCount = data.filter(a => a.golftow === true).length;
             const pgaCount = data.filter(a => a.pga === true).length;
             const amazonCount = data.filter(a => a.amazon === true).length;
+            const allowanceCount = data.filter(a => a.allowance_found === true).length;
+            const allowanceLoftLieCount = data.filter(a => a.allowance_found === true && a.allowance_loft_lie === true).length;
+            const allowanceSwingWeightCount = data.filter(a => a.allowance_found === true && a.allowance_swing_weight === true).length;
 
             const summaryData = [
                 ['Total Registros', total, 'Sin Errores', noErrors],
@@ -183,6 +186,8 @@ class ReportsModule {
                 ['Total GC con Errores', totalGC, 'Días con Registros', uniqueDates],
                 ['Registros GOLF TOWN', golfTownCount, 'Registros PGA', pgaCount],
                 ['Registros Amazon', amazonCount, '', ''],
+                ['Auditorías con TOLERANCIA / ALLOWANCE', allowanceCount, 'Allowance Loft & Lie', allowanceLoftLieCount],
+                ['Allowance Swing Weight', allowanceSwingWeightCount, '', ''],
             ];
 
             doc.autoTable({
@@ -209,11 +214,16 @@ class ReportsModule {
             const byDate = {};
             data.forEach(a => {
                 const d = a.audit_date || 'Sin fecha';
-                if (!byDate[d]) byDate[d] = { total: 0, ok: 0, err: 0, gc: 0, golfTown: 0, pga: 0, amazon: 0, orders: new Set() };
+                if (!byDate[d]) byDate[d] = { total: 0, ok: 0, err: 0, gc: 0, golfTown: 0, pga: 0, amazon: 0, allowance: 0, allowanceLoftLie: 0, allowanceSwingWeight: 0, orders: new Set() };
                 byDate[d].total++;
                 if (a.golftow === true) byDate[d].golfTown++;
                 if (a.pga === true) byDate[d].pga++;
                 if (a.amazon === true) byDate[d].amazon++;
+                if (a.allowance_found === true) {
+                    byDate[d].allowance++;
+                    if (a.allowance_loft_lie === true) byDate[d].allowanceLoftLie++;
+                    if (a.allowance_swing_weight === true) byDate[d].allowanceSwingWeight++;
+                }
                 if (a.errors_found) { byDate[d].err++; byDate[d].gc += parseInt(a.gc_with_errors) || 0; }
                 else byDate[d].ok++;
                 if (a.order_number) byDate[d].orders.add(a.order_number);
@@ -222,12 +232,12 @@ class ReportsModule {
             const dailyRows = Object.keys(byDate).sort().map(d => {
                 const r = byDate[d];
                 const p = r.total > 0 ? Math.round((r.err / r.total) * 100) : 0;
-                return [this.formatDate(d), r.total, r.golfTown, r.pga, r.amazon, r.ok, r.err, r.gc, r.orders.size, `${p}%`];
+                return [this.formatDate(d), r.total, r.golfTown, r.pga, r.amazon, r.allowance, r.allowanceLoftLie, r.allowanceSwingWeight, r.ok, r.err, r.gc, r.orders.size, `${p}%`];
             });
 
             doc.autoTable({
                 startY: y,
-                head: [['Fecha', 'Total', 'GOLF TOWN', 'PGA', 'Amazon', 'Sin Errores', 'Con Errores', 'GC Errores', 'Órdenes Únicas', '% Error']],
+                head: [['Fecha', 'Total', 'GOLF TOWN', 'PGA', 'Amazon', 'Allowance', 'Loft & Lie', 'Swing Weight', 'Sin Errores', 'Con Errores', 'GC Errores', 'Órdenes Únicas', '% Error']],
                 body: dailyRows,
                 theme: 'striped',
                 headStyles: { fillColor: this.BRAND_COLOR, fontSize: 8, fontStyle: 'bold' },
@@ -235,10 +245,11 @@ class ReportsModule {
                 columnStyles: {
                     0: { fontStyle: 'bold' },
                     1: { halign: 'center' }, 2: { halign: 'center' }, 3: { halign: 'center' }, 4: { halign: 'center' },
-                    5: { halign: 'center', textColor: this.GREEN_COLOR },
-                    6: { halign: 'center', textColor: this.RED_COLOR },
-                    7: { halign: 'center' }, 8: { halign: 'center' },
-                    9: { halign: 'center', fontStyle: 'bold' },
+                    5: { halign: 'center' }, 6: { halign: 'center' }, 7: { halign: 'center' },
+                    8: { halign: 'center', textColor: this.GREEN_COLOR },
+                    9: { halign: 'center', textColor: this.RED_COLOR },
+                    10: { halign: 'center' }, 11: { halign: 'center' },
+                    12: { halign: 'center', fontStyle: 'bold' },
                 },
                 margin: { left: 14, right: 14 },
             });

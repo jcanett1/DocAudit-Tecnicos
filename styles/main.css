@@ -1496,6 +1496,9 @@ tbody tr:last-child td {
 .stat-img    { background: linear-gradient(135deg, #e91e8c 0%, #ff6b9d 100%); }
 .stat-gold   { background: linear-gradient(135deg, #b7791f 0%, #f6c453 100%); }
 .stat-amazon { background: linear-gradient(135deg, #c2410c 0%, #f59e0b 100%); }
+.stat-allowance { background: linear-gradient(135deg, #4338ca 0%, #7c3aed 100%); }
+.stat-allowance-loft { background: linear-gradient(135deg, #5b21b6 0%, #8b5cf6 100%); }
+.stat-allowance-swing { background: linear-gradient(135deg, #3730a3 0%, #6366f1 100%); }
 
 .golf-town-count {
     display: inline-flex;
