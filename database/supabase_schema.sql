@@ -143,6 +143,7 @@ CREATE TABLE IF NOT EXISTS public.dotaudit_measurements (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     dotaudit_id UUID NOT NULL REFERENCES public.dotaudit(id) ON DELETE CASCADE,
     club_slot SMALLINT NOT NULL CHECK (club_slot BETWEEN 1 AND 9),
+    club_label VARCHAR(40),
     required_loft NUMERIC(6, 2),
     actual_loft NUMERIC(6, 2),
     required_lie NUMERIC(6, 2),

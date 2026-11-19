@@ -495,7 +495,7 @@ class AuditAPI {
 
     async getAuditMeasurements(dotauditId) {
         try {
-            const fields = 'club_slot,required_loft,actual_loft,required_lie,actual_lie,required_swing_weight,actual_swing_weight';
+            const fields = 'club_slot,club_label,required_loft,actual_loft,required_lie,actual_lie,required_swing_weight,actual_swing_weight';
             const endpoint = `/rest/v1/dotaudit_measurements?dotaudit_id=eq.${encodeURIComponent(dotauditId)}&select=${fields}&order=club_slot.asc`;
             const response = await this.request(endpoint);
             return Array.isArray(response) ? response : [];
@@ -508,7 +508,7 @@ class AuditAPI {
     async saveAuditMeasurements(dotauditId, measurements = []) {
         const endpoint = `/rest/v1/dotaudit_measurements?dotaudit_id=eq.${encodeURIComponent(dotauditId)}`;
         const fields = [
-            'required_loft', 'actual_loft', 'required_lie', 'actual_lie',
+            'club_label', 'required_loft', 'actual_loft', 'required_lie', 'actual_lie',
             'required_swing_weight', 'actual_swing_weight'
         ];
         const rowsBySlot = new Map((measurements || []).map(row => [Number(row.club_slot), row]));

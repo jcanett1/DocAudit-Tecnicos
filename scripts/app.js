@@ -198,11 +198,13 @@ correctDateForTimezone(dateString) {
 
         const auditForm = document.getElementById('auditForm');
         auditForm?.addEventListener('input', (event) => {
+            if (event.target.matches('.club-label-input')) this.syncClubLabelInputs(event.target);
             if (event.target.matches('.measurement-input') || ['loft_error', 'lie_error', 'swing_weight_error'].includes(event.target.name)) {
                 this.refreshMeasurementVisibility();
             }
         });
         auditForm?.addEventListener('change', (event) => {
+            if (event.target.matches('.club-label-input')) this.syncClubLabelInputs(event.target);
             if (event.target.matches('.measurement-input') || ['loft_error', 'lie_error', 'swing_weight_error'].includes(event.target.name)) {
                 this.refreshMeasurementVisibility();
             }
@@ -246,18 +248,37 @@ correctDateForTimezone(dateString) {
         matrices.forEach(({ containerId, title, fields }) => {
             const container = document.getElementById(containerId);
             if (!container) return;
-            const headers = Array.from({ length: 9 }, (_, index) => `<th scope="col">GC ${index + 1}</th>`).join('');
-            const rows = fields.map(field => `
-                <tr>
-                    <th scope="row">${field.label}</th>
-                    ${Array.from({ length: 9 }, (_, index) => {
-                        const slot = index + 1;
-                        const name = `${field.key}_${slot}`;
-                        const numericAttributes = field.type === 'number' ? 'inputmode="decimal" step="0.1"' : 'maxlength="12"';
-                        return `<td><input class="measurement-input" type="${field.type}" id="${name}" name="${name}" ${numericAttributes} aria-label="GC ${slot}: ${field.label}"></td>`;
-                    }).join('')}
-                </tr>
-            `).join('');
+            const tableKey = containerId === 'loftLieMatrixContainer' ? 'loft' : 'swing';
+            const headers = Array.from({ length: 9 }, (_, index) => {
+                const slot = index + 1;
+                return `<th scope="col"><input class="club-label-input" type="text" id="club_label_${tableKey}_${slot}" data-club-slot="${slot}" maxlength="40" placeholder="GC ${slot}" aria-label="Nombre o número del palo ${slot} en ${title}"></th>`;
+            }).join('');
+            const varianceAfterField = {
+                actual_loft: { key: 'loft', label: 'Variación Loft (Actual − Required)' },
+                actual_lie: { key: 'lie', label: 'Variación Lie (Actual − Required)' }
+            };
+            const rows = fields.map(field => {
+                const measurementRow = `
+                    <tr>
+                        <th scope="row">${field.label}</th>
+                        ${Array.from({ length: 9 }, (_, index) => {
+                            const slot = index + 1;
+                            const name = `${field.key}_${slot}`;
+                            const numericAttributes = field.type === 'number' ? 'inputmode="decimal" step="0.1"' : 'maxlength="12"';
+                            return `<td><input class="measurement-input" type="${field.type}" id="${name}" name="${name}" ${numericAttributes} aria-label="${field.label}, palo ${slot}"></td>`;
+                        }).join('')}
+                    </tr>
+                `;
+                const variance = varianceAfterField[field.key];
+                if (!variance) return measurementRow;
+                const varianceRow = `
+                    <tr id="${variance.key}VarianceRow" class="measurement-variance-row" hidden>
+                        <th scope="row">${variance.label}</th>
+                        ${Array.from({ length: 9 }, (_, index) => `<td id="${variance.key}_variance_${index + 1}" class="measurement-variance-highlight">—</td>`).join('')}
+                    </tr>
+                `;
+                return measurementRow + varianceRow;
+            }).join('');
             container.innerHTML = `
                 <table class="measurement-table" aria-label="Matriz de ${title}">
                     <thead><tr><th scope="col">${title}</th>${headers}</tr></thead>
@@ -285,6 +306,38 @@ correctDateForTimezone(dateString) {
         const swingSection = document.getElementById('swingWeightMeasurementsSection');
         if (loftSection) loftSection.style.display = showLoftLie ? 'block' : 'none';
         if (swingSection) swingSection.style.display = showSwingWeight ? 'block' : 'none';
+        this.updateMeasurementVariances(allowanceFound && isChecked('allowance_loft_lie'));
+    }
+
+    syncClubLabelInputs(source) {
+        const slot = source.dataset.clubSlot;
+        const otherTable = source.id.startsWith('club_label_loft_') ? 'swing' : 'loft';
+        const counterpart = document.getElementById(`club_label_${otherTable}_${slot}`);
+        if (counterpart) counterpart.value = source.value;
+    }
+
+    updateMeasurementVariances(show) {
+        [
+            { key: 'loft', required: 'required_loft', actual: 'actual_loft' },
+            { key: 'lie', required: 'required_lie', actual: 'actual_lie' }
+        ].forEach(({ key, required, actual }) => {
+            const row = document.getElementById(`${key}VarianceRow`);
+            if (row) row.hidden = !show;
+            Array.from({ length: 9 }, (_, index) => index + 1).forEach(slot => {
+                const cell = document.getElementById(`${key}_variance_${slot}`);
+                const requiredValue = document.getElementById(`${required}_${slot}`)?.value.trim() ?? '';
+                const actualValue = document.getElementById(`${actual}_${slot}`)?.value.trim() ?? '';
+                const difference = Number(actualValue) - Number(requiredValue);
+                if (!cell) return;
+                if (requiredValue === '' || actualValue === '' || !Number.isFinite(difference)) {
+                    cell.textContent = '—';
+                } else {
+                    const rounded = Number(difference.toFixed(2));
+                    cell.textContent = `${rounded > 0 ? '+' : ''}${rounded.toFixed(2)}°`;
+                }
+                cell.classList.toggle('measurement-variance-highlight', show);
+            });
+        });
     }
 
     extractMeasurementRows(form) {
@@ -293,9 +346,12 @@ correctDateForTimezone(dateString) {
             'required_swing_weight', 'actual_swing_weight'
         ];
         return Array.from({ length: 9 }, (_, index) => {
-            const row = { club_slot: index + 1 };
+            const slot = index + 1;
+            const row = { club_slot: slot };
+            const labelInput = form.querySelector(`#club_label_loft_${slot}`);
+            row.club_label = String(labelInput?.value || '').trim() || null;
             fields.forEach(field => {
-                const input = form.querySelector(`[name="${field}_${index + 1}"]`);
+                const input = form.querySelector(`[name="${field}_${slot}"]`);
                 const raw = String(input?.value || '').trim();
                 if (field.includes('swing_weight')) {
                     row[field] = raw || null;
@@ -304,7 +360,7 @@ correctDateForTimezone(dateString) {
                 }
             });
             return row;
-        }).filter(row => fields.some(field => row[field] !== null));
+        }).filter(row => row.club_label !== null || fields.some(field => row[field] !== null));
     }
 
     populateMeasurementInputs(rows = []) {
@@ -313,6 +369,13 @@ correctDateForTimezone(dateString) {
             if (!Number.isInteger(slot) || slot < 1 || slot > 9) return;
             Object.keys(row).forEach(key => {
                 if (key === 'club_slot') return;
+                if (key === 'club_label') {
+                    ['loft', 'swing'].forEach(table => {
+                        const labelInput = document.getElementById(`club_label_${table}_${slot}`);
+                        if (labelInput) labelInput.value = row[key] ?? '';
+                    });
+                    return;
+                }
                 const input = document.getElementById(`${key}_${slot}`);
                 if (input) input.value = row[key] ?? '';
             });
@@ -1419,24 +1482,41 @@ async handleFormSubmit(e) {
         }
 
         const populatedMeasurements = measurements.filter(row => [
+            'club_label',
             'required_loft', 'actual_loft', 'required_lie', 'actual_lie',
             'required_swing_weight', 'actual_swing_weight'
         ].some(field => row[field] !== null && row[field] !== undefined && row[field] !== ''));
         if (populatedMeasurements.length > 0) {
             const measurementValue = value => value === null || value === undefined || value === '' ? '-' : this.escapeHtml(value);
+            const showAllowanceVariance = Boolean(audit.allowance_found && audit.allowance_loft_lie);
+            const formatVariance = (required, actual) => {
+                if (required === null || required === undefined || required === '' || actual === null || actual === undefined || actual === '') return '-';
+                const difference = Number(actual) - Number(required);
+                if (!Number.isFinite(difference)) return '-';
+                const rounded = Number(difference.toFixed(2));
+                return `${rounded > 0 ? '+' : ''}${rounded.toFixed(2)}°`;
+            };
             html += `
                 <div class="view-measurements-section">
                     <h3 class="view-section-title"><i class="fas fa-ruler-horizontal"></i> Lecturas Loft, Lie y Swing Weight</h3>
                     <div class="measurement-table-wrap">
                         <table class="view-measurements-table">
-                            <thead><tr><th>Palo</th><th>Required Loft</th><th>Actual Loft</th><th>Required Lie</th><th>Actual Lie</th><th>Required Swing Weight</th><th>Actual Swing Weight</th></tr></thead>
+                            <thead><tr>
+                                <th>Palo</th><th>Required Loft</th><th>Actual Loft</th>
+                                ${showAllowanceVariance ? '<th>Variación Loft</th>' : ''}
+                                <th>Required Lie</th><th>Actual Lie</th>
+                                ${showAllowanceVariance ? '<th>Variación Lie</th>' : ''}
+                                <th>Required Swing Weight</th><th>Actual Swing Weight</th>
+                            </tr></thead>
                             <tbody>${populatedMeasurements.map(row => `
                                 <tr>
-                                    <td>GC ${this.escapeHtml(row.club_slot)}</td>
+                                    <td>${this.escapeHtml(row.club_label || `GC ${row.club_slot}`)}</td>
                                     <td>${measurementValue(row.required_loft)}</td>
                                     <td>${measurementValue(row.actual_loft)}</td>
+                                    ${showAllowanceVariance ? `<td class="measurement-variance-highlight">${formatVariance(row.required_loft, row.actual_loft)}</td>` : ''}
                                     <td>${measurementValue(row.required_lie)}</td>
                                     <td>${measurementValue(row.actual_lie)}</td>
+                                    ${showAllowanceVariance ? `<td class="measurement-variance-highlight">${formatVariance(row.required_lie, row.actual_lie)}</td>` : ''}
                                     <td>${measurementValue(row.required_swing_weight)}</td>
                                     <td>${measurementValue(row.actual_swing_weight)}</td>
                                 </tr>

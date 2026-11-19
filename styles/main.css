@@ -811,6 +811,37 @@ tbody tr:last-child td {
     text-align: center;
 }
 
+.measurement-table .club-label-input {
+    width: 74px;
+    min-height: 32px;
+    padding: 0.25rem;
+    border: 1px solid #aaa49a;
+    border-radius: 4px;
+    background: #fff;
+    color: #282522;
+    text-align: center;
+    text-transform: none;
+}
+
+.measurement-table .club-label-input::placeholder {
+    color: #817b72;
+    opacity: 1;
+}
+
+.measurement-variance-row[hidden] {
+    display: none;
+}
+
+.measurement-table .measurement-variance-row th {
+    background: #fff3bf;
+}
+
+.measurement-variance-highlight {
+    background: #fff0a8 !important;
+    color: #594300;
+    font-weight: 700;
+}
+
 .view-measurements-section {
     margin-bottom: 1.25rem;
     padding: 1rem 1.25rem;
@@ -835,6 +866,11 @@ tbody tr:last-child td {
 .view-measurements-table th {
     background: #eceaf7;
     color: #34304e;
+}
+
+.view-measurements-table .measurement-variance-highlight {
+    background: #fff0a8;
+    color: #594300;
 }
 
 .error-type {
