@@ -134,6 +134,29 @@ class AuditAPI {
         }
     }
 
+    // Obtener todas las auditorías recorriendo las páginas del conjunto filtrado
+    async getAllAudits(filters = {}) {
+        const pageSize = 500;
+        const allAudits = [];
+        let offset = 0;
+
+        while (true) {
+            const page = await this.getAudits({
+                ...filters,
+                limit: pageSize,
+                offset
+            });
+
+            allAudits.push(...page);
+
+            if (page.length < pageSize) {
+                return allAudits;
+            }
+
+            offset += page.length;
+        }
+    }
+
     // Obtener el total de registros (para paginación)
     async getAuditsCount(filters = {}) {
         try {

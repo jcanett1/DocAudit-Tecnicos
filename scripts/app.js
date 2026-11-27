@@ -1976,8 +1976,8 @@ async getStats() {
         try {
             this.showNotification('Preparando exportación a Excel...', 'info');
             
-            // Obtener todos los datos sin límites de paginación
-            const allAudits = await window.auditAPI.getAudits(this.filters, 1, 999999);
+            // Obtener todos los registros, conservando los filtros aplicados
+            const allAudits = await window.auditAPI.getAllAudits(this.filters);
             
             // Preparar datos para Excel
             const excelData = allAudits.map((audit, index) => {
@@ -2065,8 +2065,8 @@ async getStats() {
         try {
             this.showNotification('Preparando exportación a PDF...', 'info');
             
-            // Obtener todos los datos sin límites de paginación
-            const allAudits = await window.auditAPI.getAudits(this.filters, 1, 999999);
+            // Obtener todos los registros, conservando los filtros aplicados
+            const allAudits = await window.auditAPI.getAllAudits(this.filters);
             
             // Crear documento PDF
             const { jsPDF } = window.jspdf;
