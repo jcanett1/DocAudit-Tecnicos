@@ -152,6 +152,24 @@
                         </select>
                     </div>
                     <div class="stats-filter-group">
+                        <label for="statsFilterCell"><i class="fas fa-th"></i> Celda:</label>
+                        <select id="statsFilterCell">
+                            <option value="">Todas las celdas</option>
+                        </select>
+                    </div>
+                    <div class="stats-filter-group">
+                        <label for="statsFilterOperator"><i class="fas fa-user-cog"></i> Operador:</label>
+                        <select id="statsFilterOperator">
+                            <option value="">Todos los operadores</option>
+                        </select>
+                    </div>
+                    <div class="stats-filter-group">
+                        <label for="statsFilterErrorType"><i class="fas fa-bug"></i> Tipo de error:</label>
+                        <select id="statsFilterErrorType">
+                            <option value="">Todos los tipos</option>
+                        </select>
+                    </div>
+                    <div class="stats-filter-group">
                         <label for="statsFilterGolfTown"><i class="fas fa-golf-ball"></i> GOLF TOWN:</label>
                         <select id="statsFilterGolfTown">
                             <option value="">Todas las órdenes</option>
@@ -200,6 +218,11 @@
                         <h2 class="stats-section-title"><i class="fas fa-tachometer-alt"></i> Resumen General</h2>
                         <p class="stats-section-subtitle">TOLERANCIA / ALLOWANCE se cuenta por auditoría; una auditoría puede incluir Loft &amp; Lie y Swing Weight.</p>
                         <div id="statsSummaryCards" class="stats-grid"></div>
+                        <div class="stats-error-focus">
+                            <h3 class="stats-subsection-title"><i class="fas fa-bullseye"></i> Mayores focos de error</h3>
+                            <p class="stats-section-subtitle">Celdas, operadores y tipos con más errores acumulados según los filtros; si una orden tiene varios operadores, se atribuyen los errores completos a cada uno.</p>
+                            <div id="statsErrorFocusCards" class="stats-error-focus-grid"></div>
+                        </div>
                     </div>
 
                     <!-- 2. Registro total diario por fecha -->

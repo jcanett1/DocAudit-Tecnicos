@@ -7,6 +7,7 @@ class StatsModule {
         this.api = apiInstance;
         this.charts = {};   // Instancias de Chart.js activas
         this.data = [];     // Datos cargados
+        this.allData = [];  // Datos base antes de aplicar los filtros locales
 
         // Campos de error con sus etiquetas legibles
         this.ERROR_FIELDS = [
@@ -36,6 +37,7 @@ class StatsModule {
             boxing_error:             'Boxing'
         };
 
+        this.populateErrorTypeFilter();
         this.bindEvents();
         this.setDefaultDates();
     }
@@ -76,6 +78,104 @@ class StatsModule {
         return this.ERROR_FIELDS.reduce((sum, f) => sum + (parseInt(audit[f]) || 0), 0);
     }
 
+    normalizeStatsValue(value) {
+        return String(value ?? '').trim().toLocaleLowerCase('es');
+    }
+
+    escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, character => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[character]);
+    }
+
+    getOperatorValues(value) {
+        const values = Array.isArray(value)
+            ? value
+            : String(value ?? '').split(/[,;\r\n]+/);
+        return [...new Set(values.map(operator => String(operator ?? '').trim()).filter(Boolean))];
+    }
+
+    populateErrorTypeFilter() {
+        const select = document.getElementById('statsFilterErrorType');
+        if (!select) return;
+
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Todos los tipos';
+        select.replaceChildren(placeholder);
+
+        this.ERROR_FIELDS.forEach(field => {
+            const option = document.createElement('option');
+            option.value = field;
+            option.textContent = this.ERROR_LABELS[field];
+            select.appendChild(option);
+        });
+    }
+
+    updateStatsFilterOptions(select, placeholderText, values, selectedValue, formatLabel = value => value) {
+        if (!select) return;
+
+        const uniqueValues = new Map();
+        values.forEach(rawValue => {
+            const value = String(rawValue ?? '').trim();
+            const key = this.normalizeStatsValue(value);
+            if (value && !uniqueValues.has(key)) uniqueValues.set(key, value);
+        });
+
+        const selected = String(selectedValue ?? '').trim();
+        const selectedKey = this.normalizeStatsValue(selected);
+        if (selected && !uniqueValues.has(selectedKey)) uniqueValues.set(selectedKey, selected);
+
+        const sortedValues = [...uniqueValues.values()]
+            .sort((first, second) => first.localeCompare(second, 'es', { numeric: true, sensitivity: 'base' }));
+        const options = [document.createElement('option')];
+        options[0].value = '';
+        options[0].textContent = placeholderText;
+
+        sortedValues.forEach(value => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = formatLabel(value);
+            options.push(option);
+        });
+
+        select.replaceChildren(...options);
+        select.value = sortedValues.find(value => this.normalizeStatsValue(value) === selectedKey) || '';
+    }
+
+    populateStatsFilterOptions(data, selectedCell, selectedOperator) {
+        const cellSelect = document.getElementById('statsFilterCell');
+        const operatorSelect = document.getElementById('statsFilterOperator');
+
+        this.updateStatsFilterOptions(
+            cellSelect,
+            'Todas las celdas',
+            data.map(audit => audit.build_cell),
+            selectedCell,
+            value => /^\d+$/.test(value) ? `Celda ${value}` : value
+        );
+        this.updateStatsFilterOptions(
+            operatorSelect,
+            'Todos los operadores',
+            data.flatMap(audit => this.getOperatorValues(audit.operadores)),
+            selectedOperator
+        );
+    }
+
+    filterStatsData(data, cellValue, operatorValue, errorTypeValue) {
+        const cellFilter = this.normalizeStatsValue(cellValue);
+        const operatorFilter = this.normalizeStatsValue(operatorValue);
+        const errorField = this.ERROR_FIELDS.includes(errorTypeValue) ? errorTypeValue : '';
+
+        return data.filter(audit => {
+            if (cellFilter && this.normalizeStatsValue(audit.build_cell) !== cellFilter) return false;
+            if (operatorFilter && !this.getOperatorValues(audit.operadores)
+                .some(operator => this.normalizeStatsValue(operator) === operatorFilter)) return false;
+            if (errorField && (parseInt(audit[errorField], 10) || 0) <= 0) return false;
+            return true;
+        });
+    }
+
     // ── Cargar datos y renderizar todo ───────────────────────
     async loadAndRender() {
         const fromVal      = document.getElementById('statsFilterFrom')?.value || '';
@@ -84,10 +184,14 @@ class StatsModule {
         const golfTownVal  = document.getElementById('statsFilterGolfTown')?.value || '';
         const pgaVal        = document.getElementById('statsFilterPga')?.value || '';
         const amazonVal     = document.getElementById('statsFilterAmazon')?.value || '';
+        const cellVal       = document.getElementById('statsFilterCell')?.value || '';
+        const operatorVal   = document.getElementById('statsFilterOperator')?.value || '';
+        const errorTypeVal  = document.getElementById('statsFilterErrorType')?.value || '';
 
         this.showLoading(true);
         this.showContent(false);
         this.showNoData(false);
+        if (window.reportsModule) window.reportsModule.enableButtons(false);
 
         try {
             const params = new URLSearchParams();
@@ -117,10 +221,16 @@ class StatsModule {
 
             if (!response.ok) throw new Error(`Error HTTP ${response.status}`);
             const rawData = await response.json();
-            this.data = Array.isArray(rawData) ? rawData : [];
+            this.allData = Array.isArray(rawData) ? rawData : [];
+            this.populateStatsFilterOptions(this.allData, cellVal, operatorVal);
+            this.data = this.filterStatsData(this.allData, cellVal, operatorVal, errorTypeVal);
 
             if (this.data.length === 0) {
                 this.showNoData(true);
+                const message = document.querySelector('#statsNoData p');
+                if (message) message.textContent = this.allData.length > 0
+                    ? 'No se encontraron auditorías con los filtros seleccionados.'
+                    : 'No se encontraron auditorías para las fechas y filtros seleccionados.';
                 return;
             }
 
@@ -167,6 +277,7 @@ class StatsModule {
     // ── Renderizar todo ──────────────────────────────────────
     renderAll() {
         this.renderSummaryCards();       // incluye indicadores de errores, canales y allowance
+        this.renderErrorFocusCards();
         this.renderDailyTable();
         this.renderGolfTownTable();
         this.renderPgaTable();
@@ -268,6 +379,65 @@ class StatsModule {
                 <div class="stat-label">Allowance: Swing Weight</div>
             </div>
         `;
+    }
+
+    renderErrorFocusCards() {
+        const container = document.getElementById('statsErrorFocusCards');
+        if (!container) return;
+
+        const byCell = new Map();
+        const byOperator = new Map();
+        const byErrorType = new Map();
+        const addCount = (group, label, count) => {
+            const current = group.get(label) || { total: 0, audits: 0 };
+            current.total += count;
+            current.audits++;
+            group.set(label, current);
+        };
+
+        this.data.forEach(audit => {
+            const auditTotal = this.getTotalErrors(audit);
+            if (auditTotal <= 0) return;
+
+            const cell = String(audit.build_cell ?? '').trim() || 'Sin celda';
+            addCount(byCell, cell, auditTotal);
+            this.getOperatorValues(audit.operadores).forEach(operator => addCount(byOperator, operator, auditTotal));
+
+            this.ERROR_FIELDS.forEach(field => {
+                const count = parseInt(audit[field], 10) || 0;
+                if (count > 0) addCount(byErrorType, this.ERROR_LABELS[field], count);
+            });
+        });
+
+        const getLeader = group => [...group.entries()].sort((first, second) =>
+            second[1].total - first[1].total || first[0].localeCompare(second[0], 'es', { sensitivity: 'base' })
+        )[0] || null;
+        const cellLeader = getLeader(byCell);
+        const operatorLeader = getLeader(byOperator);
+        const errorLeader = getLeader(byErrorType);
+        const buildCard = (icon, title, leader, formatValue = value => value) => {
+            const value = leader ? formatValue(leader[0]) : 'Sin datos';
+            const detail = leader
+                ? `${leader[1].total} ${leader[1].total === 1 ? 'error acumulado' : 'errores acumulados'} · ${leader[1].audits} ${leader[1].audits === 1 ? 'auditoría con error' : 'auditorías con error'}`
+                : 'Sin errores registrados en la selección actual.';
+            return `
+                <article class="error-focus-card">
+                    <span class="error-focus-icon"><i class="fas ${icon}" aria-hidden="true"></i></span>
+                    <div class="error-focus-copy">
+                        <span class="error-focus-label">${title}</span>
+                        <strong class="error-focus-value">${this.escapeHtml(value)}</strong>
+                        <span class="error-focus-detail">${detail}</span>
+                    </div>
+                </article>
+            `;
+        };
+        const cellLabel = value => `Celda ${value}`;
+
+        container.innerHTML = [
+            buildCard('fa-th', 'Celda con más errores', cellLeader, cellLabel),
+            buildCard('fa-user-cog', 'Operador con más errores', operatorLeader),
+            buildCard('fa-bug', 'Tipo de error con más casos', errorLeader)
+        ].join('');
     }
 
     // ── 2. Tabla de registro diario ──────────────────────────
