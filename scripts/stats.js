@@ -8,6 +8,7 @@ class StatsModule {
         this.charts = {};   // Instancias de Chart.js activas
         this.data = [];     // Datos cargados
         this.allData = [];  // Datos base antes de aplicar los filtros locales
+        this.statsLoadStarted = false;
 
         // Campos de error con sus etiquetas legibles
         this.ERROR_FIELDS = [
@@ -71,6 +72,9 @@ class StatsModule {
     // ── Eventos ──────────────────────────────────────────────
     bindEvents() {
         document.getElementById('loadStatsBtn')?.addEventListener('click', () => this.loadAndRender());
+        document.querySelector('.tab-btn[data-tab="stats"]')?.addEventListener('click', () => {
+            if (!this.statsLoadStarted) this.loadAndRender();
+        });
     }
 
     // ── Calcular total de errores de un registro ─────────────
@@ -178,6 +182,7 @@ class StatsModule {
 
     // ── Cargar datos y renderizar todo ───────────────────────
     async loadAndRender() {
+        this.statsLoadStarted = true;
         const fromVal      = document.getElementById('statsFilterFrom')?.value || '';
         const toVal        = document.getElementById('statsFilterTo')?.value   || '';
         const auditorVal   = document.getElementById('statsFilterAuditor')?.value || '';
@@ -268,6 +273,7 @@ class StatsModule {
 
         } catch (err) {
             console.error('Error cargando estadísticas:', err);
+            this.statsLoadStarted = false;
             this.showNoData(true);
         } finally {
             this.showLoading(false);
